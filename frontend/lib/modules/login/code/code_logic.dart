@@ -6,6 +6,10 @@ import '/api/api_constants.dart';
 class CodeLogic extends GetxController {
   final CodeState state = CodeState();
 
+  // 倒计时状态
+  RxInt countdown = 60.obs; // 初始倒计时为 60 秒
+  RxBool isTimerRunning = false.obs;
+
   // 发送验证码
   Future<void> sendVerificationCode() async {
     String email = state.emailController.text.trim();
@@ -25,6 +29,8 @@ class CodeLogic extends GetxController {
 
       if (response.statusCode == 200 && response.data['success'] == true) {
         Get.snackbar('验证码已发送', '请查收您的邮箱');
+        // 启动倒计时
+        startCountdown();
       } else {
         state.errorMessage.value = response.data['message'] ?? '验证码发送失败';
       }
@@ -32,6 +38,23 @@ class CodeLogic extends GetxController {
       state.errorMessage.value = '验证码发送异常，请稍后重试';
       print("Error in sendVerificationCode: $e");
     }
+  }
+
+  // 倒计时逻辑
+  void startCountdown() {
+    isTimerRunning.value = true; // 启动倒计时
+    countdown.value = 60; // 重置倒计时为 60 秒
+
+    Future.doWhile(() async {
+      await Future.delayed(Duration(seconds: 1));
+      if (countdown.value > 0) {
+        countdown.value--;
+        return true; // 继续倒计时
+      } else {
+        isTimerRunning.value = false; // 倒计时结束
+        return false; // 停止倒计时
+      }
+    });
   }
 
   // 使用验证码登录

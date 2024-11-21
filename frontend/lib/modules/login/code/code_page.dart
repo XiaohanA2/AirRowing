@@ -62,49 +62,64 @@ class CodePage extends StatelessWidget {
                     ),
                   ),
                   Padding(padding: const EdgeInsets.only(top: 10.0)),
-                  // 验证码输入框
-                  TextField(
-                    controller: logic.state.codeController,
-                    decoration: InputDecoration(
-                      labelText: '请输入验证码',
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.9),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20.0),
-                        borderSide: BorderSide(color: Colors.transparent),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20.0),
-                        borderSide: BorderSide(color: Colors.blue),
-                      ),
-                    ),
-                  ),
-                  Padding(padding: const EdgeInsets.only(top: 10.0)),
-                  // 发送验证码按钮
-                  ElevatedButton(
-                    style: ButtonStyle(
-                      elevation: MaterialStateProperty.all<double>(5),
-                      minimumSize: MaterialStateProperty.all<Size>(Size(400, 50)),
-                      backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
-                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                        RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20), // 圆角半径
+                  // 验证码输入框和发送验证码按钮
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: logic.state.codeController,
+                          decoration: InputDecoration(
+                            labelText: '请输入验证码',
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.9),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                              borderSide: BorderSide(color: Colors.transparent),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20.0),
+                              borderSide: BorderSide(color: Colors.blue),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    onPressed: logic.sendVerificationCode,
-                    child: Text(
-                      '发送验证码',
-                      style: TextStyle(
-                        color: Color(0xFF1B41B2),
-                        fontFamily: 'inter',
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      SizedBox(width: 10), // 间距
+                      Expanded(
+                        flex: 1,
+                        child: Obx(
+                              () => ElevatedButton(
+                            style: ButtonStyle(
+                              elevation: MaterialStateProperty.all<double>(5),
+                              minimumSize: MaterialStateProperty.all<Size>(Size(60, 50)),
+                              backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
+                              shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                            ),
+                            onPressed: logic.isTimerRunning.value ? null : logic.sendVerificationCode,
+                            child: Text(
+                              logic.isTimerRunning.value
+                                  ? '${logic.countdown.value}s'
+                                  : '发送',
+                              style: TextStyle(
+                                color: logic.isTimerRunning.value
+                                    ? Colors.grey
+                                    : Color(0xFF1B41B2),
+                                fontFamily: 'inter',
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                   Padding(padding: const EdgeInsets.only(top: 10.0)),
-                  // 验证码登录按钮
+                  // 登录按钮
                   ElevatedButton(
                     style: ButtonStyle(
                       elevation: MaterialStateProperty.all<double>(5),
@@ -125,6 +140,20 @@ class CodePage extends StatelessWidget {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                  ),
+                  // 提示文字
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10.0),
+                    child: Text(
+                      '如果是第一次登录，用户将自动注册',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontFamily: 'inter',
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                   // 错误提示

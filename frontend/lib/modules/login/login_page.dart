@@ -71,7 +71,7 @@ class LoginPage extends StatelessWidget {
                     TextField(
                       controller: logic.state.emailController,
                       decoration: InputDecoration(
-                        labelText: '请输入您的邮箱',
+                        labelText: '请输入您的用户名或邮箱',
                         filled: true,
                         fillColor: Colors.white.withOpacity(0.9),
                         enabledBorder: OutlineInputBorder(
