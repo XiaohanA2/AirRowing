@@ -41,3 +41,18 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+
+# enerated from the compiling
+windows/*
+linux/*
+macos/*
+pubspec.lock
+# android/gradle/wrapper/gradle-wrapper.properties
+
+
+# Xcode
+*.pbxproj
+!default.pbxproj
+xcuserdata/
+project.xcworkspace/

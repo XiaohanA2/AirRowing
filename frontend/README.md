@@ -1,16 +1,9 @@
-# frontend
+AirRowing前端app，采用flutter中的getX框架进行开发
 
-A new Flutter project.
+对于负责不同模块的开发人员，需创建新的分支，以模块名进行命名
+代码完成后push到模块的分支运行测试，测试无误后发起pull request进行评审，评审完毕后将分支merge到main中。
 
-## Getting Started
+现在详情页发送评论部分，只能获取下方焦点来评论，中间postbar还没有写点击逻辑
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+这里再personalpage页面中修改了动态组件的部分细节，但是现在原封不动的放进communitypage中就会报错，现在还不知道什么问题
+所以personalpage页面中修改了，但是communitypage页面中保持原动态组件代码
