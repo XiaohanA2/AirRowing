@@ -25,6 +25,10 @@ public enum ResponseCodeEnum implements BaseExceptionInterface {
     NOTE_NOT_LIKED("NOTE-20009", "您未点赞该篇笔记，无法取消点赞"),
     NOTE_ALREADY_COLLECTED("NOTE-20010", "您已经收藏过该笔记"),
     NOTE_NOT_COLLECTED("NOTE-20011", "您未收藏该篇笔记，无法取消收藏"),
+    COMMENT_BLANK("NOTE-20012", "评论内容不能为空"),
+    COMMENT_ERROR("NOTE-20013", "操作失败"),
+    COMMENT_NOT_FOUND("NOTE-20014", "评论不存在"),
+    PERMISSION_DENIED("NOTE-20015", "权限不足"),
     ;
 
     // 异常码

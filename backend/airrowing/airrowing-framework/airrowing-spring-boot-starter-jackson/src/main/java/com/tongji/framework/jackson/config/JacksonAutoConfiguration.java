@@ -3,6 +3,8 @@ package com.tongji.framework.jackson.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
@@ -68,6 +70,12 @@ public class JacksonAutoConfiguration {
         javaTimeModule.addDeserializer(YearMonth.class, new YearMonthDeserializer(DateConstants.DATE_FORMAT_Y_M));
 
         objectMapper.registerModule(javaTimeModule);
+
+        // 添加 Long 和 long 类型的序列化为 String
+        SimpleModule longToStringModule = new SimpleModule();
+        longToStringModule.addSerializer(Long.class, ToStringSerializer.instance);
+        longToStringModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        objectMapper.registerModule(longToStringModule);
 
         // 初始化 JsonUtils 中的 ObjectMapper
         JsonUtils.init(objectMapper);

@@ -17,7 +17,7 @@
 //    @SneakyThrows
 //    void testEncodePassword() {
 //        // 你的密码
-//        String password = "tj123456";
+//        String password = "Led647716";
 //        String[] arr = ConfigTools.genKeyPair(512);
 //
 //        // 私钥

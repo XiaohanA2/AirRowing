@@ -25,10 +25,5 @@ sa-token:
   # 是否输出操作日志
   is-log: true
 
-# 添加 alarm.type 配置项
-alarm:
-  type: sms # 或 mail，根据需要选择
-
-
 
 

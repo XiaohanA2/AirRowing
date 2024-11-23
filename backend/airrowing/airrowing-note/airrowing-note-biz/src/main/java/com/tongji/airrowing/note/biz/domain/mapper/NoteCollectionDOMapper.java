@@ -72,5 +72,4 @@ public interface NoteCollectionDOMapper {
      * @return 收藏的笔记列表
      */
     List<CollectedNoteVO> selectCollectedNotesByUserIdWithPagination(Map<String, Object> params);
-
 }
