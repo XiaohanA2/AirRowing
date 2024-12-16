@@ -17,7 +17,11 @@ import 'api/base_api_client.dart';
 
 void main() async{
   BaseApiClient.addInterceptors();
-  await dotenv.load();
+  try {
+    await dotenv.load();
+  } catch (e) {
+    print("Error loading .env file: $e");
+  }
   runApp(MyApp());
 }
 

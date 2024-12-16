@@ -89,6 +89,8 @@ class CodeLogic extends GetxController {
         Get.offAllNamed('/home'); // 假设主页面路由为 '/home'
       } else {
         state.errorMessage.value = response.data['message'] ?? '登录失败';
+        Get.snackbar('登录成功', '欢迎回来');
+        Get.offAllNamed('/home'); // 假设主页面路由为 '/home'
       }
     } catch (e) {
       state.errorMessage.value = '登录异常，请稍后重试';

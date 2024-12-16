@@ -14,12 +14,12 @@ import 'profile_logic.dart';
 class ProfilePage extends StatelessWidget {
   ProfilePage({super.key});
   final ProfileLogic profileLogic = Get.find<ProfileLogic>();
-  final Map<String, dynamic> arguments = Get.arguments;
+  //final Map<String, dynamic> arguments = Get.arguments;
 
   @override
   Widget build(BuildContext context) {
-    final int userId = arguments['userId'];
-    profileLogic.fetchUser(userId);
+    //final int userId = arguments['userId'];
+    //profileLogic.fetchUser(userId);
     print("holyfuckingshit");
     UserProfileData userProfileData = profileLogic.state.userProfileData.value;
     // 实例化 ProfileLogic 并获取用户信息
