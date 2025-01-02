@@ -8,6 +8,7 @@ import AdminBlogSetting from '@/pages/admin/userProfile.vue'
 import UserDetail from '@/pages/admin/userView.vue'
 import LikeTagList from '@/pages/admin/LikeList.vue'
 import NoteDetail from '../pages/admin/noteDetail.vue'
+import TrainingAnalysis from '@/pages/admin/TrainingAnalysis.vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import Admin from '@/layouts/admin/admin.vue'
 
@@ -80,6 +81,14 @@ const routes = [
                 name: "NoteDetail",
                 meta: {
                     title: '笔记详情'
+                }
+            },
+            {
+                path: '/admin/training-analysis',
+                name: 'training-analysis',
+                component: TrainingAnalysis,
+                meta: {
+                    title: '训练分析'
                 }
             }
         ]

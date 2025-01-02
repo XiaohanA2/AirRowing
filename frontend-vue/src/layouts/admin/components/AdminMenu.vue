@@ -19,6 +19,10 @@
                     <span>{{ item.name }}</span>
                 </el-menu-item>
             </template>
+            <el-menu-item index="/admin/training-analysis">
+                <el-icon><DataAnalysis /></el-icon>
+                <span>训练分析</span>
+            </el-menu-item>
         </el-menu>
     </div>
 </template>
