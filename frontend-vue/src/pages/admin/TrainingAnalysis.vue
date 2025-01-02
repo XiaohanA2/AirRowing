@@ -1,158 +1,136 @@
 <template>
-  <div class="training-analysis-container">
-    <!-- 左侧部分 -->
-    <div class="left-section">
-      <!-- 训练历史记录 -->
-      <el-card class="history-section">
-        <template #header>
-          <div class="card-header">
-            <span>训练历史记录</span>
-            <el-button type="primary" size="small" @click="refreshHistory">
-              <el-icon><Refresh /></el-icon>
-            </el-button>
-          </div>
-        </template>
-        <el-scrollbar height="300px">
-          <div v-if="trainingHistory.length === 0" class="empty-text">
-            暂无训练记录
-          </div>
-          <el-timeline v-else>
-            <el-timeline-item
-              v-for="(record, index) in trainingHistory"
-              :key="index"
-              :timestamp="formatDate(record.trainingDate)"
-              placement="top"
-            >
-              <el-card>
-                <div class="training-record">
-                  <h4>Airrowing Training</h4>
-                  <div class="record-stats">
-                    <span><el-icon><Timer /></el-icon> {{ record.duration }}分钟</span>
-                    <span><el-icon><Position /></el-icon> {{ record.distance }}公里</span>
-                    <span v-if="record.calories">
-                      <el-icon><Aim /></el-icon> {{ record.calories }}卡路里
-                    </span>
-                  </div>
-                  <div class="record-status">
-                    <el-tag :type="record.status === 1 ? 'success' : 'warning'" size="small">
-                      {{ record.status === 1 ? '已完成' : '进行中' }}
-                    </el-tag>
-                  </div>
-                </div>
-              </el-card>
-            </el-timeline-item>
-          </el-timeline>
-        </el-scrollbar>
-      </el-card>
-
-      <!-- 上传训练记录 -->
-      <el-card class="upload-section">
-        <template #header>
-          <div class="card-header">
-            <span>上传训练记录</span>
-          </div>
-        </template>
-        <el-form :model="uploadForm" label-width="100px" class="upload-form">
-          <el-form-item label="训练时长">
-            <el-input-number 
-              v-model="uploadForm.duration" 
-              :min="1"
-              controls-position="right"
-              placeholder="请输入训练时长(分钟)"
-            />
-          </el-form-item>
-          <el-form-item label="训练距离">
-            <el-input-number
-              v-model="uploadForm.distance"
-              :min="0"
-              :precision="1"
-              :step="0.1"
-              controls-position="right"
-              placeholder="请输入训练距离(公里)"
-            />
-          </el-form-item>
-          <el-form-item label="消耗卡路里">
-            <el-input-number
-              v-model="uploadForm.calories"
-              :min="0"
-              :precision="1"
-              controls-position="right"
-              placeholder="请输入消耗卡路里(可选)"
-            />
-          </el-form-item>
-          <el-form-item label="训练文件">
-            <el-upload
-              class="upload-demo"
-              :action="uploadAction"
-              :on-success="handleUploadSuccess"
-              :on-error="handleUploadError"
-              :before-upload="beforeUpload"
-            >
-              <el-button type="primary">选择文件</el-button>
-            </el-upload>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="submitTrainingRecord">
-              提交记录
-            </el-button>
-          </el-form-item>
-        </el-form>
-      </el-card>
-    </div>
-
-    <!-- 右侧部分 -->
-    <div class="right-section">
-      <!-- AI 聊天框 -->
-      <el-card class="chat-section">
-        <template #header>
-          <div class="card-header">
-            <span>AI 训练助手</span>
-            <el-button type="primary" size="small" @click="clearChat">
-              清空对话
-            </el-button>
-          </div>
-        </template>
-        <div class="chat-container">
-          <el-scrollbar height="300px" ref="chatScrollbar">
-            <div class="chat-messages">
-              <div
-                v-for="(msg, index) in chatMessages"
-                :key="index"
-                :class="['message', msg.type]"
-              >
-                <div class="message-content">{{ msg.content }}</div>
-                <div class="message-time">{{ msg.time }}</div>
-              </div>
+  <div class="common-container">
+    <div class="training-analysis-container">
+      <!-- 左侧部分 -->
+      <div class="left-section">
+        <!-- 训练历史记录 -->
+        <el-card class="history-section">
+          <template #header>
+            <div class="card-header">
+              <span>训练历史记录</span>
+              <el-button type="primary" size="small" @click="refreshHistory">
+                <el-icon>
+                  <Refresh />
+                </el-icon>
+              </el-button>
             </div>
+          </template>
+          <el-scrollbar height="300px">
+            <div v-if="trainingHistory.length === 0" class="empty-text">
+              暂无训练记录
+            </div>
+            <el-timeline v-else>
+              <el-timeline-item v-for="(record, index) in trainingHistory" :key="index"
+                :timestamp="formatDate(record.trainingDate)" placement="top">
+                <el-card>
+                  <div class="training-record">
+                    <h4>Airrowing Training</h4>
+                    <div class="record-stats">
+                      <span><el-icon>
+                          <Timer />
+                        </el-icon> {{ record.duration }}分钟</span>
+                      <span><el-icon>
+                          <Position />
+                        </el-icon> {{ record.distance }}公里</span>
+                      <span v-if="record.calories">
+                        <el-icon>
+                          <Aim />
+                        </el-icon> {{ record.calories }}卡路里
+                      </span>
+                    </div>
+                    <div class="record-status">
+                      <el-tag :type="record.status === 1 ? 'success' : 'warning'" size="small">
+                        {{ record.status === 1 ? '已完成' : '进行中' }}
+                      </el-tag>
+                    </div>
+                  </div>
+                </el-card>
+              </el-timeline-item>
+            </el-timeline>
           </el-scrollbar>
-          <div class="chat-input">
-            <el-input
-              v-model="chatInput"
-              placeholder="请输入您的问题"
-              @keyup.enter="sendMessage"
-            >
-              <template #append>
-                <el-button @click="sendMessage">发送</el-button>
-              </template>
-            </el-input>
-          </div>
-        </div>
-      </el-card>
+        </el-card>
 
-      <!-- 分析展示框 -->
-      <el-card class="analysis-section">
-        <template #header>
-          <div class="card-header">
-            <span>训练分析报告</span>
-            <el-button type="primary" size="small" @click="refreshAnalysis">
-              刷新报告
-            </el-button>
+        <!-- 上传训练记录 -->
+        <el-card class="upload-section">
+          <template #header>
+            <div class="card-header">
+              <span>上传训练记录</span>
+            </div>
+          </template>
+          <el-form :model="uploadForm" label-width="100px" class="upload-form">
+            <el-form-item label="训练时长">
+              <el-input-number v-model="uploadForm.duration" :min="1" controls-position="right"
+                placeholder="请输入训练时长(分钟)" />
+            </el-form-item>
+            <el-form-item label="训练距离">
+              <el-input-number v-model="uploadForm.distance" :min="0" :precision="1" :step="0.1"
+                controls-position="right" placeholder="请输入训练距离(公里)" />
+            </el-form-item>
+            <el-form-item label="消耗卡路里">
+              <el-input-number v-model="uploadForm.calories" :min="0" :precision="1" controls-position="right"
+                placeholder="请输入消耗卡路里(可选)" />
+            </el-form-item>
+            <el-form-item label="训练文件">
+              <el-upload class="upload-demo" :action="uploadAction" :on-success="handleUploadSuccess"
+                :on-error="handleUploadError" :before-upload="beforeUpload">
+                <el-button type="primary">选择文件</el-button>
+              </el-upload>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="submitTrainingRecord">
+                提交记录
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </div>
+
+      <!-- 右侧部分 -->
+      <div class="right-section">
+        <!-- AI 聊天框 -->
+        <el-card class="chat-section">
+          <template #header>
+            <div class="card-header">
+              <span>AI 训练助手</span>
+              <el-button type="primary" size="small" @click="clearChat">
+                清空对话
+              </el-button>
+            </div>
+          </template>
+          <div class="chat-container">
+            <el-scrollbar height="300px" ref="chatScrollbar">
+              <div class="chat-messages">
+                <div v-for="(msg, index) in chatMessages" :key="index" :class="['message', msg.type]">
+                  <div class="message-content">{{ msg.content }}</div>
+                  <div class="message-time">{{ msg.time }}</div>
+                </div>
+              </div>
+            </el-scrollbar>
+            <div class="chat-input">
+              <el-input v-model="chatInput" placeholder="请输入您的问题" @keyup.enter="sendMessage">
+                <template #append>
+                  <el-button @click="sendMessage">发送</el-button>
+                </template>
+              </el-input>
+            </div>
           </div>
-        </template>
-        <el-scrollbar height="300px">
-          <div class="analysis-content" v-html="analysisContent"></div>
-        </el-scrollbar>
-      </el-card>
+        </el-card>
+
+        <!-- 分析展示框 -->
+        <el-card class="analysis-section">
+          <template #header>
+            <div class="card-header">
+              <span>训练分析报告</span>
+              <el-button type="primary" size="small" @click="refreshAnalysis">
+                刷新报告
+              </el-button>
+            </div>
+          </template>
+          <el-scrollbar height="300px">
+            <div class="analysis-content" v-html="analysisContent"></div>
+          </el-scrollbar>
+        </el-card>
+      </div>
     </div>
   </div>
 </template>
@@ -263,7 +241,7 @@ const sendMessage = async () => {
     //   body: JSON.stringify({ message: chatInput.value })
     // })
     // const aiResponse = await response.json()
-    
+
     // 模拟AI回复
     setTimeout(() => {
       chatMessages.value.push({
@@ -362,6 +340,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.common-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 78vh;
+  /* 占满窗口高度 */
+  overflow: hidden;
+  /* 禁止外部滚动 */
+  padding: 0;
+  background-color: #f5f5f5;
+}
+
 .training-analysis-container {
   display: flex;
   gap: 20px;
@@ -452,22 +442,22 @@ onMounted(() => {
     display: flex;
     gap: 16px;
     margin: 10px 0;
-    
+
     span {
       display: flex;
       align-items: center;
       gap: 4px;
       color: #666;
-      
+
       .el-icon {
         font-size: 16px;
       }
     }
   }
-  
+
   .record-status {
     display: flex;
     justify-content: flex-end;
   }
 }
-</style> 
+</style>
