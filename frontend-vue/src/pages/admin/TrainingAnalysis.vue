@@ -138,6 +138,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
+import axios from 'axios'
+
+// 获取用户状态
+const userStore = useUserStore()
 
 // 训练历史记录
 const trainingHistory = ref([])
@@ -151,9 +156,10 @@ const chatMessages = ref([])
 const chatInput = ref('')
 const analysisContent = ref('')
 const chatScrollbar = ref(null)
+const isLoading = ref(false)
 
 // 上传相关配置
-const uploadAction = '/api/training/upload' // 替换为实际的上传接口
+const uploadAction = '/api/training/upload'
 
 // 获取训练历史记录
 const refreshHistory = async () => {
@@ -174,8 +180,7 @@ const refreshHistory = async () => {
         calories: 400,
         status: 1,
         type: "airrowing"
-      },
-      // ... 添加更多记录
+      }
     ]
   } catch (error) {
     ElMessage.error('获取历史记录失败')
@@ -195,7 +200,6 @@ const handleUploadError = () => {
 
 // 上传前验证
 const beforeUpload = (file) => {
-  // 在这里添加文件验证逻辑
   return true
 }
 
@@ -208,8 +212,6 @@ const submitTrainingRecord = async () => {
       status: 1,
       type: 'airrowing'
     }
-    // 这里替换为实际的API调用
-    // await submitRecord(trainingData)
     ElMessage.success('提交成功')
     uploadForm.value = {
       duration: 30,
@@ -225,7 +227,7 @@ const submitTrainingRecord = async () => {
 
 // 发送聊天消息
 const sendMessage = async () => {
-  if (!chatInput.value.trim()) return
+  if (!chatInput.value.trim() || isLoading.value) return
 
   const newMessage = {
     content: chatInput.value,
@@ -233,28 +235,33 @@ const sendMessage = async () => {
     time: new Date().toLocaleTimeString()
   }
   chatMessages.value.push(newMessage)
-
+  
+  // 清空输入框
+  const userQuestion = chatInput.value
+  chatInput.value = ''
+  
   try {
-    // 这里替换为实际的API调用
-    // const response = await fetch('/api/chat', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ message: chatInput.value })
-    // })
-    // const aiResponse = await response.json()
+    isLoading.value = true
+    const response = await axios.post('/ai/chat', {
+      user_id: userStore.userInfo.id,
+      question: userQuestion
+    })
 
-    // 模拟AI回复
-    setTimeout(() => {
+    if (response.data.success) {
       chatMessages.value.push({
-        content: '这是AI的回复',
+        content: response.data.data,
         type: 'ai',
         time: new Date().toLocaleTimeString()
       })
       scrollToBottom()
-    }, 1000)
-
-    chatInput.value = ''
+    } else {
+      ElMessage.error(response.data.message || '发送消息失败')
+    }
   } catch (error) {
-    ElMessage.error('发送消息失败')
+    console.error('发送消息失败:', error)
+    ElMessage.error('发送消息失败，请稍后重试')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -318,22 +325,12 @@ const formatDate = (dateString) => {
 onMounted(() => {
   refreshHistory()
   refreshAnalysis()
-  // 添加初始聊天记录
+  // 添加初始AI欢迎消息
   chatMessages.value = [
     {
-      content: "你好！我是你的AI训练助手。我注意到你最近的划船训练很有规律，有什么可以帮你的吗？",
+      content: "你好！我是你的AI训练助手。我可以帮你分析训练数据，提供专业建议。有什么我可以帮你的吗？",
       type: "ai",
-      time: "09:00:00"
-    },
-    {
-      content: "我想知道如何提高我的长距离划船效率",
-      type: "user",
-      time: "09:01:23"
-    },
-    {
-      content: "根据你最近的训练数据，我建议：1. 注意配速控制，前半程不要过快 2. 保持呼吸节奏稳定 3. 每5000米可以适当补充能量。需要我详细解释这些要点吗？",
-      type: "ai",
-      time: "09:01:45"
+      time: new Date().toLocaleTimeString()
     }
   ]
 })
