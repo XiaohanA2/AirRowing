@@ -20,20 +20,17 @@ export const useUserStore = defineStore('user', () => {
   // 退出登录
   async function logout() {
     try {
-      // 调用后端的登出接口
-      const res = await apiLogout();
-      if (res.success) {
-        console.log("Successfully logged out from server");
-
-        // 删除 Token
-        removeToken();
-        // 清除用户信息
-        userInfo.value = {};
-      } else {
-        console.error("Server logout failed:", res.message);
-      }
+      // 先清除本地存储
+      removeToken();
+      userInfo.value = {};
+      
+      // 再调用后端登出接口
+      await apiLogout();
+      return true;
     } catch (error) {
-      console.error("Error while logging out:", error);
+      console.warn("登出时发生错误:", error);
+      // 即使后端请求失败,前端也已经清除了登录状态
+      return true;
     }
   }
 

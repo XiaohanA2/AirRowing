@@ -30,24 +30,31 @@ instance.interceptors.request.use(function (config) {
 // 添加响应拦截器
 instance.interceptors.response.use(
     function (response) {
-        // 对响应数据做点什么
         return response.data
     },
     function (error) {
-        // 对响应错误做点什么
-        const config = error.config; // 获取请求的配置信息
-        const silent = config?.silent; // 判断是否需要静默处理
+        // 对401错误特殊处理
+        if (error.response?.status === 401) {
+            // 如果是登出接口返回401,说明token已失效,直接返回成功
+            if (error.config.url === '/auth/logout') {
+                return {
+                    success: true,
+                    message: '退出成功'
+                }
+            }
+        }
+
+        const config = error.config;
+        const silent = config?.silent;
 
         if (!silent) {
-            let errorMsg = error.response?.message || '请求失败';
-            // 弹错误提示
+            let errorMsg = error.response?.data?.message || '请求失败';
             showMessage(errorMsg, 'error');
-        } else {
-            console.warn('请求失败但静默处理:', error);
         }
 
         return Promise.reject(error);
-    })
+    }
+)
 
 // 暴露出去
 export default instance;

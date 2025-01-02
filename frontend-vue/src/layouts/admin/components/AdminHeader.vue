@@ -97,23 +97,16 @@ const handleCommand = (command) => {
 }
 
 // 退出登录
-// function logout() {
-//     showModel('是否确认要退出登录？').then(() => {
-//         userStore.logout()
-//         showMessage('退出登录成功！')
-//         // 跳转登录页
-//         router.push('/login')
-//     })
-// }
 async function logout() {
     const confirmed = await showModel('是否确认要退出登录？');
     if (confirmed) {
-        await userStore.logout();  // 等待 logout 完成
-        showMessage('退出登录成功！');
-        router.push('/login');  // 跳转到登录页面
+        const success = await userStore.logout();
+        if (success) {
+            showMessage('退出登录成功！');
+            router.push('/login');
+        }
     }
 }
-
 
 // 表单引用
 const formRef = ref(null)
