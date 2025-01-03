@@ -91,11 +91,6 @@ const menus = [
                 'icon': 'User',
                 'path': '/main/note/list',
             },
-            {
-                'name': '关注粉丝',
-                'icon': 'FolderOpened',
-                'path': '/main/community/follow',
-            },
         ]
     },
     {

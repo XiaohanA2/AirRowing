@@ -5,8 +5,6 @@ import Admin from '@/layouts/admin/admin.vue'
 import Login from '@/pages/login.vue'
 import NoteList from '@/pages/note/list.vue'
 import NoteDetail from '@/pages/note/detail.vue'
-import Follow from '@/pages/community/follow.vue'
-import Collect from '@/pages/community/collect.vue'
 import TrainingAnalysis from '@/pages/training/analysis.vue'
 import UserProfile from '@/pages/user/profile.vue'
 import UserView from '@/pages/user/view.vue'
@@ -97,21 +95,7 @@ const routes = [
                 path: "note/list",
                 component: NoteList,
                 meta: {
-                    title: '我的帖子'
-                }
-            },
-            {
-                path: "community/follow",
-                component: Follow,
-                meta: {
-                    title: '关注列表'
-                }
-            },
-            {
-                path: "community/collect",
-                component: Collect,
-                meta: {
-                    title: '我的收藏'
+                    title: '我的主页'
                 }
             },
             {

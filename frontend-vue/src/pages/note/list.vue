@@ -1,6 +1,34 @@
 <template>
   <div class="my-notes-container">
     <el-card class="note-detail-card" shadow="hover">
+      <div class="social-stats">
+        <div class="stat-cards">
+          <el-card class="stat-card" shadow="hover" @click="showFollowings">
+            <div class="stat-content">
+              <div class="stat-icon following-icon">
+                <el-icon><UserFilled /></el-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-number">{{ followCount }}</div>
+                <div class="stat-label">关注</div>
+              </div>
+            </div>
+          </el-card>
+          
+          <el-card class="stat-card" shadow="hover" @click="showFans">
+            <div class="stat-content">
+              <div class="stat-icon fans-icon">
+                <el-icon><Star /></el-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-number">{{ fansCount }}</div>
+                <div class="stat-label">粉丝</div>
+              </div>
+            </div>
+          </el-card>
+        </div>
+      </div>
+
       <div class="header-actions">
         <div class="tab-buttons">
           <button 
@@ -197,6 +225,67 @@
           {{ message }}
         </div>
       </transition>
+
+      <el-dialog
+        v-model="deleteDialogVisible"
+        title="删除确认"
+        width="30%"
+        center
+        :show-close="false"
+        class="delete-dialog"
+      >
+        <div class="delete-dialog-content">
+          <i class="el-icon-warning" style="color: #ff4949; font-size: 24px;"></i>
+          <p>确定要删除这篇笔记吗？</p>
+          <p class="delete-warning">删除后将无法恢复！</p>
+        </div>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="deleteDialogVisible = false">取消</el-button>
+            <el-button type="danger" @click="confirmDelete" :loading="loading">
+              确定删除
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <el-drawer
+        v-model="socialDrawerVisible"
+        :title="drawerType === 'following' ? '关注列表' : '粉丝列表'"
+        direction="rtl"
+        size="35%"
+      >
+        <div class="user-list">
+          <el-table
+            :data="userList"
+            style="width: 100%"
+            v-loading="loading"
+          >
+            <el-table-column label="用户信息" min-width="200">
+              <template #default="{ row }">
+                <div class="user-info">
+                  <el-avatar :size="40" :src="row.avatar" />
+                  <div class="user-details">
+                    <div class="nickname">{{ row.nickname }}</div>
+                    <div class="introduction">{{ row.introduction || '这个人很懒，什么都没写~' }}</div>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template #default="{ row }">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="goToUserDetail(row.userId)"
+                >
+                  查看主页
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-drawer>
     </el-card>
   </div>
 </template>
@@ -204,9 +293,11 @@
 <script>
 import axios from 'axios';
 import { getToken } from '@/composables/cookie';
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { likeListService, collectListDetailService } from '@/api/collect.js'
+import { UserFilled, Star } from '@element-plus/icons-vue';
+import { currentUserService, followService, fansService } from '@/api/follow.js';
 
 export default {
   setup() {
@@ -596,20 +687,29 @@ export default {
       imgUrisArray.splice(index, 1);
     };
 
-    const deleteNote = async (note) => {
-      if (!confirm('确定要删除这篇笔记吗？')) return;
+    const deleteDialogVisible = ref(false);
+    const noteToDelete = ref(null);
+
+    const deleteNote = (note) => {
+      noteToDelete.value = note;
+      deleteDialogVisible.value = true;
+    };
+
+    const confirmDelete = async () => {
+      if (!noteToDelete.value) return;
+      
       try {
         loading.value = true;
         const token = getToken();
         const response = await axios.post(
           '/api/note/note/delete',
           {
-            type: note.type,
-            videoUri: note.videoUri || null,
-            title: note.title,
-            content: note.content,
-            topicId: note.topicId,
-            id: note.id
+            type: noteToDelete.value.type,
+            videoUri: noteToDelete.value.videoUri || null,
+            title: noteToDelete.value.title,
+            content: noteToDelete.value.content,
+            topicId: noteToDelete.value.topicId,
+            id: noteToDelete.value.id
           },
           {
             headers: {
@@ -618,17 +718,20 @@ export default {
             },
           }
         );
+        
         if (response.data.success) {
-          alert('笔记已删除。');
-          myNotes.value = myNotes.value.filter(n => n.id !== note.id);
+          showToast('笔记删除成功', 'success');
+          myNotes.value = myNotes.value.filter(n => n.id !== noteToDelete.value.id);
+          deleteDialogVisible.value = false;
         } else {
           throw new Error(response.data.message || '删除笔记失败。');
         }
       } catch (err) {
         console.error('删除笔记时出错:', err);
-        alert(err.message || '删除笔记时出错。');
+        showToast(err.message || '删除笔记失败', 'error');
       } finally {
         loading.value = false;
+        noteToDelete.value = null;
       }
     };
 
@@ -789,6 +892,101 @@ export default {
       }, 3000);
     };
 
+    const socialDrawerVisible = ref(false);
+    const drawerType = ref('following');
+    const followCount = ref(0);
+    const fansCount = ref(0);
+    const userList = ref([]);
+
+    const showFollowings = async () => {
+      drawerType.value = 'following';
+      userList.value = [];
+      socialDrawerVisible.value = true;
+      await loadUsers();
+    };
+
+    const showFans = async () => {
+      drawerType.value = 'fans';
+      userList.value = [];
+      socialDrawerVisible.value = true;
+      await loadUsers();
+    };
+
+    const loadUsers = async () => {
+      if (loading.value) return;
+      loading.value = true;
+      
+      try {
+        const params = {
+          userId: userId.value,
+          pageNo: 1,
+          pageSize: 20
+        };
+        
+        const service = drawerType.value === 'following' ? followService : fansService;
+        const result = await service(params);
+        
+        if (result.success) {
+          if (result.data && Array.isArray(result.data)) {
+            userList.value = result.data.map(user => ({
+              ...user,
+              avatar: user.avatar || '/assets/developer.png',
+              nickname: user.nickname || '未设置昵称',
+              introduction: user.introduction || '这个人很懒，什么都没写~'
+            }));
+          } else {
+            userList.value = [];
+          }
+        } else {
+          throw new Error(result.message || '获取用户列表失败');
+        }
+      } catch (error) {
+        console.error('加载用户失败:', error);
+        ElMessage.error(error.message || '加载用户列表失败');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const goToUserDetail = (userId) => {
+      router.push(`/user/${userId}`);
+      socialDrawerVisible.value = false;
+    };
+
+    const initSocialData = async () => {
+      try {
+        const result = await currentUserService();
+        if (result.success) {
+          userId.value = result.data.id;
+          const [followRes, fansRes] = await Promise.all([
+            followService({ 
+              userId: userId.value, 
+              pageNo: 1,
+              pageSize: 1
+            }),
+            fansService({ 
+              userId: userId.value, 
+              pageNo: 1,
+              pageSize: 1
+            })
+          ]);
+
+          if (followRes.success) {
+            followCount.value = followRes.totalCount || 0;
+          }
+          if (fansRes.success) {
+            fansCount.value = fansRes.totalCount || 0;
+          }
+        }
+      } catch (error) {
+        console.error('初始化社交数据失败:', error);
+      }
+    };
+
+    onMounted(() => {
+      initSocialData();
+    });
+
     fetchCurrentUser();
 
     return {
@@ -830,6 +1028,17 @@ export default {
       currentTab,
       likedNotes,
       switchTab,
+      deleteDialogVisible,
+      noteToDelete,
+      confirmDelete,
+      socialDrawerVisible,
+      drawerType,
+      followCount,
+      fansCount,
+      userList,
+      showFollowings,
+      showFans,
+      goToUserDetail,
     };
   },
 };
@@ -1536,6 +1745,158 @@ input[type="file"]:disabled {
   .publish-btn {
     padding: 6px 16px;
     font-size: 13px;
+  }
+}
+
+.delete-dialog :deep(.el-dialog__header) {
+  border-bottom: 1px solid #ebeef5;
+  padding: 20px;
+  margin: 0;
+}
+
+.delete-dialog :deep(.el-dialog__body) {
+  padding: 30px 20px;
+}
+
+.delete-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #ebeef5;
+  padding: 15px 20px;
+}
+
+.delete-dialog-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+.delete-warning {
+  color: #ff4949;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.message-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-toast.success {
+  background-color: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  color: #67c23a;
+}
+
+.message-toast.error {
+  background-color: #fef0f0;
+  border: 1px solid #fde2e2;
+  color: #f56c6c;
+}
+
+.social-stats {
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.stat-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-content {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  margin-right: 16px;
+  font-size: 20px;
+}
+
+.following-icon {
+  background-color: #ecf5ff;
+  color: #409eff;
+}
+
+.fans-icon {
+  background-color: #fdf6ec;
+  color: #e6a23c;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.stat-label {
+  color: #909399;
+  font-size: 14px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.nickname {
+  font-weight: 500;
+  color: #303133;
+}
+
+.introduction {
+  font-size: 12px;
+  color: #909399;
+}
+
+@media (max-width: 768px) {
+  .stat-cards {
+    grid-template-columns: 1fr;
   }
 }
 </style>
