@@ -62,7 +62,7 @@ const { menuStore, activeTab, tabList, tabChange, removeTab, handleCloseTab } = 
 
 .el-tabs {
     height: 32px;
-    margin-top: 38px;
+    margin-top: 42px;
 }
 
 .el-tabs__header {

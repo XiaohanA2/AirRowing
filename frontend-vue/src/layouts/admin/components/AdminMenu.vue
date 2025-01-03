@@ -87,19 +87,9 @@ const menus = [
                 'path': '/main/community/home',
             },
             {
-                'name': '我的笔记',
-                'icon': 'Document',
+                'name': '我的主页',
+                'icon': 'User',
                 'path': '/main/note/list',
-            },
-            {
-                'name': '关注粉丝',
-                'icon': 'FolderOpened',
-                'path': '/main/community/follow',
-            },
-            {
-                'name': '我的点赞',
-                'icon': 'Star',
-                'path': '/main/community/like',
             },
         ]
     },

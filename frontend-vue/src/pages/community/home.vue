@@ -1,20 +1,39 @@
 <template>
   <div class="page-container">
     <el-card class="content-card" shadow="never">
-      <div class="header-section mb-6">
-        <h2 class="text-2xl font-bold">社区动态</h2>
-        <p class="text-gray-600 mt-2">发现精彩的赛艇故事</p>
+      <div class="header-section">
+        <div class="header-content">
+          <div class="title-section">
+            <h2 class="text-2xl font-bold">社区动态</h2>
+            <p class="text-gray-600 mt-2">发现精彩的赛艇故事</p>
+          </div>
+          
+          <div class="search-bar">
+            <el-input
+              v-model="searchQuery"
+              placeholder="搜索帖子..."
+              :prefix-icon="Search"
+              clearable
+              @input="handleSearch"
+              class="search-input"
+            >
+              <template #append>
+                <el-button :icon="Search" @click="handleSearch">
+                  搜索
+                </el-button>
+              </template>
+            </el-input>
+          </div>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <el-card v-for="note in notesWithPlaceholders" 
-                :key="note.id || note.placeholder"
-                class="note-card" 
-                :class="{ 'placeholder-card': note.placeholder }"
-                shadow="hover"
-                @click="goToNoteDetail(note.id, note.creatorId)">
-          
-          <template v-if="!note.placeholder">
+        <template v-if="filteredNotes.length > 0">
+          <el-card v-for="note in filteredNotes.filter(note => !note.placeholder)" 
+                  :key="note.id"
+                  class="note-card"
+                  shadow="hover"
+                  @click="goToNoteDetail(note.id, note.creatorId)">
             <div class="image-container mb-4">
               <div class="image-wrapper">
                 <img 
@@ -22,6 +41,7 @@
                   @error="handleImageError" 
                   alt="Note Image" 
                   class="note-image"
+                  :style="getImageStyle(note)"
                 />
                 <div class="image-overlay"></div>
               </div>
@@ -36,8 +56,13 @@
               </div>
               <span class="text-sm text-gray-500">{{ note.updateTime }}</span>
             </div>
-          </template>
-        </el-card>
+          </el-card>
+        </template>
+      </div>
+
+      <div v-if="searchQuery && filteredNotesWithoutPlaceholders.length === 0" class="empty-search-result">
+        <img src="/assets/developer.png" alt="无搜索结果" class="empty-image" />
+        <p class="empty-text">没有找到相关帖子</p>
       </div>
 
       <div class="flex justify-center mt-8">
@@ -58,6 +83,7 @@
 <script>
 import { getNoteListService, getNoteDetailService } from "@/api/note.js";
 import { ElMessage } from "element-plus";
+import { Search } from '@element-plus/icons-vue'
 
 export default {
   data() {
@@ -67,6 +93,8 @@ export default {
       currentPageInput: 1, // 输入框中的页码
       pageSize: 9, // 每页固定展示 9 条数据
       totalNotes: 0, // 总笔记数，从后端获取
+      imageStyles: {}, // 存储每个图片的样式
+      searchQuery: '', // 添加搜索查询
     };
   },
   computed: {
@@ -79,6 +107,33 @@ export default {
         id: `placeholder-${index}`,
       }));
       return [...this.notes, ...placeholders];
+    },
+    filteredNotes() {
+      if (!this.searchQuery) {
+        return this.notesWithPlaceholders;
+      }
+      
+      const searchLower = this.searchQuery.toLowerCase();
+      const filtered = this.notes.filter(note => 
+        note.title?.toLowerCase().includes(searchLower) ||
+        note.content?.toLowerCase().includes(searchLower)
+      );
+      
+      if (filtered.length >= 3) {
+        const placeholders = Array.from(
+          { length: Math.max(0, this.pageSize - filtered.length) },
+          (_, index) => ({
+            placeholder: true,
+            id: `placeholder-${index}`,
+          })
+        );
+        return [...filtered, ...placeholders];
+      }
+      
+      return filtered;
+    },
+    filteredNotesWithoutPlaceholders() {
+      return this.filteredNotes.filter(note => !note.placeholder);
     },
   },
   methods: {
@@ -126,6 +181,22 @@ export default {
     },
     handleImageError(event) {
       event.target.src = "/assets/developer.png";
+    },
+    getImageStyle(note) {
+      return {
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        maxWidth: '100%',
+        maxHeight: '100%',
+        width: 'auto',
+        height: 'auto',
+        objectFit: 'contain'
+      }
+    },
+    handleSearch() {
+      this.currentPage = 1;
     },
   },
   mounted() {
@@ -218,6 +289,7 @@ export default {
   width: 100%;
   padding-top: 66.67%;
   overflow: hidden;
+  background-color: #f5f5f5;
 }
 
 .note-image {
@@ -225,9 +297,9 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  min-width: 100%;
+  min-height: 100%;
+  object-fit: contain;
   transition: all 0.5s ease;
 }
 
@@ -247,7 +319,7 @@ export default {
 }
 
 .note-card:hover .note-image {
-  transform: translate(-50%, -50%) scale(1.1);
+  transform: translate(-50%, -50%) scale(1.05);
 }
 
 .note-card:hover .image-overlay {
@@ -275,6 +347,145 @@ export default {
 @media (min-width: 1024px) {
   .image-wrapper {
     padding-top: 56.25%;
+  }
+}
+
+.image-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #f0f0f0;
+}
+
+.note-image {
+  opacity: 1;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.image-wrapper {
+  background: linear-gradient(45deg, #f5f5f5 25%, #efefef 25%, #efefef 50%, #f5f5f5 50%, #f5f5f5 75%, #efefef 75%);
+  background-size: 20px 20px;
+}
+
+.header-section {
+  padding: 24px 0;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.title-section {
+  flex-shrink: 0;
+}
+
+.search-bar {
+  max-width: 300px;
+  width: 100%;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  border-radius: 20px 0 0 20px;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+}
+
+.search-input :deep(.el-input-group__append) {
+  border-radius: 0 20px 20px 0;
+  background-color: #409eff;
+  border-color: #409eff;
+  padding: 0 20px;
+}
+
+.search-input :deep(.el-input-group__append .el-button) {
+  color: white;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.search-input :deep(.el-input__inner) {
+  height: 36px;
+  line-height: 36px;
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .title-section {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .search-bar {
+    max-width: 100%;
+  }
+}
+
+.no-results {
+  padding: 40px 0;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .search-bar {
+    max-width: 100%;
+    padding: 0 16px;
+  }
+}
+
+.empty-search-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-image {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  margin-bottom: 24px;
+  opacity: 0.6;
+}
+
+.empty-text {
+  color: #909399;
+  font-size: 16px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .empty-image {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .empty-text {
+    font-size: 14px;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
 }
 </style>

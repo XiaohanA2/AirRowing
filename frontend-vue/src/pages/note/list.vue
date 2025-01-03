@@ -1,6 +1,61 @@
 <template>
   <div class="my-notes-container">
     <el-card class="note-detail-card" shadow="hover">
+      <div class="social-stats">
+        <div class="stat-cards">
+          <el-card class="stat-card" shadow="hover" @click="showFollowings">
+            <div class="stat-content">
+              <div class="stat-icon following-icon">
+                <el-icon><UserFilled /></el-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-number">{{ followCount }}</div>
+                <div class="stat-label">关注</div>
+              </div>
+            </div>
+          </el-card>
+          
+          <el-card class="stat-card" shadow="hover" @click="showFans">
+            <div class="stat-content">
+              <div class="stat-icon fans-icon">
+                <el-icon><Star /></el-icon>
+              </div>
+              <div class="stat-info">
+                <div class="stat-number">{{ fansCount }}</div>
+                <div class="stat-label">粉丝</div>
+              </div>
+            </div>
+          </el-card>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="tab-buttons">
+          <button 
+            class="tab-btn" 
+            :class="{ active: currentTab === 'notes' }"
+            @click="switchTab('notes')"
+          >
+            我的笔记
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: currentTab === 'likes' }"
+            @click="switchTab('likes')"
+          >
+            我的点赞
+          </button>
+        </div>
+        
+        <button 
+          class="publish-btn" 
+          @click="openPublishModal"
+          v-if="status === 1 && currentTab === 'notes'"
+        >
+          发布笔记
+        </button>
+      </div>
+
       <div v-if="loading" class="loading-spinner">
         <div class="spinner"></div>
       </div>
@@ -11,49 +66,77 @@
         </div>
 
         <div v-else>
-          <div class="actions" v-if="status === 1">
-            <button class="publish-btn" @click="openPublishModal">发布笔记</button>
-          </div>
-
           <div class="notes-grid">
-            <!-- 使用分页后的笔记数据 -->
-            <div class="my-note-card" :class="{ 'is-top': note.isTop }" v-for="note in paginatedNotes" :key="note.id"
-              @click="goToNoteDetail(note.id)">
-              <!-- 修改图片显示部分 -->
-              <div class="note-images">
-                <img src="/assets/developer.png" alt="默认图片" class="note-image" />
-                <img v-if="note.imgUris && note.imgUris.length > 0" 
-                     :src="note.imgUris[0]" 
-                     alt="" 
-                     class="note-image" 
-                     style="position: absolute; top: 0; left: 0;" />
+            <template v-if="currentTab === 'notes'">
+              <div 
+                class="my-note-card" 
+                :class="{ 'is-top': note.isTop }" 
+                v-for="note in paginatedNotes" 
+                :key="note.id"
+                @click="goToNoteDetail(note.id)"
+              >
+                <div class="note-images">
+                  <img src="/assets/developer.png" alt="默认图片" class="note-image" />
+                  <img v-if="note.imgUris && note.imgUris.length > 0" 
+                       :src="note.imgUris[0]" 
+                       alt="" 
+                       class="note-image" 
+                       style="position: absolute; top: 0; left: 0;" />
+                </div>
+                <h3>{{ note.title }}</h3>
+                <small>{{ formatDate(note.updateTime) }}</small>
+                <div class="note-actions">
+                  <button class="edit-btn" @click.stop="editNote(note)" v-if="status === 1">编辑</button>
+                  <button class="top-btn" @click.stop="toggleTop(note)" :class="{ active: note.isTop }">
+                    {{ note.isTop ? '取消置顶' : '置顶' }}
+                  </button>
+                  <button class="visibility-btn" @click.stop="toggleVisibility(note)" :class="{ active: note.visible === 1 }">
+                    {{ note.visible === 1 ? '公开' : '仅自己可见' }}
+                  </button>
+                  <button class="delete-btn" v-if="status === 1" @click.stop="deleteNote(note)">
+                    删除
+                  </button>
+                  <button class="restore-btn" v-else @click.stop="restoreNote(note)">
+                    恢复
+                  </button>
+                </div>
               </div>
-              <h3>{{ note.title }}</h3>
-              <small>{{ formatDate(note.updateTime) }}</small>
-              <div class="note-actions">
-                <button class="edit-btn" @click.stop="editNote(note)" v-if="status === 1">编辑</button>
-                <button class="top-btn" @click.stop="toggleTop(note)" :class="{ active: note.isTop }">
-                  {{ note.isTop ? '取消置顶' : '置顶' }}
-                </button>
-                <button class="visibility-btn" @click.stop="toggleVisibility(note)" :class="{ active: note.visible === 1 }">
-                  {{ note.visible === 1 ? '公开' : '仅自己可见' }}
-                </button>
-                <button class="delete-btn" v-if="status === 1" @click.stop="deleteNote(note)">
-                  删除
-                </button>
-                <button class="restore-btn" v-else @click.stop="restoreNote(note)">
-                  恢复
-                </button>
+            </template>
+
+            <template v-else>
+              <div 
+                class="my-note-card"
+                v-for="article in likedNotes"
+                :key="article.id"
+                @click="goToNoteDetail(article.id)"
+              >
+                <div class="note-images">
+                  <img src="/assets/developer.png" alt="默认图片" class="note-image" />
+                  <img 
+                    v-if="article.imgUris" 
+                    :src="article.imgUris" 
+                    alt="" 
+                    class="note-image"
+                    style="position: absolute; top: 0; left: 0;"
+                  />
+                </div>
+                <h3>{{ article.title }}</h3>
+                <div class="note-info">
+                  <div class="creator-info">
+                    <img :src="article.avatar || '/assets/developer.png'" alt="Creator Avatar" class="creator-avatar" />
+                    <span class="creator-name">{{ article.creatorName }}</span>
+                  </div>
+                  <small class="update-time">{{ formatDate(article.updateTime) }}</small>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
 
-          <!-- 替换原有的加载更多按钮为分页器 -->
           <div class="pagination-container">
             <el-pagination
               v-model:current-page="currentPage"
               :page-size="pageSize"
-              :total="myNotes.length"
+              :total="currentTab === 'notes' ? myNotes.length : likedNotes.length"
               layout="prev, pager, next"
               @current-change="handlePageChange"
             />
@@ -61,7 +144,6 @@
         </div>
       </div>
 
-      <!-- 编辑笔记模态窗口 -->
       <transition name="fade">
         <div v-if="isEditModalOpen" class="modal-overlay" @click.self="closeEditModal">
           <div class="modal">
@@ -75,7 +157,6 @@
                 内容:
                 <textarea v-model="currentNote.content" required></textarea>
               </label>
-              <!-- 图片上传部分 -->
               <label>
                 上传图片:
                 <input type="file" multiple @change="handleEditImageUpload" accept="image/*" />
@@ -95,11 +176,10 @@
         </div>
       </transition>
 
-      <!-- 发布笔记模态窗口 -->
       <transition name="fade">
         <div v-if="isPublishModalOpen" class="modal-overlay" @click.self="closePublishModal">
           <div class="modal">
-            <h2>发布笔记</h2>
+            <h2>发布帖子</h2>
             <form @submit.prevent="submitPublishNote" class="form">
               <label>
                 标题:
@@ -109,7 +189,6 @@
                 内容:
                 <textarea v-model="newNote.content" required></textarea>
               </label>
-              <!-- 图片上传部分 -->
               <label>
                 上传图片 (最多4张):
                 <input 
@@ -126,10 +205,6 @@
                   <button type="button" @click="removeImage(newNote.imgUris, index)">×</button>
                 </div>
               </div>
-              <!-- <label>
-              主题 ID:
-              <input type="number" v-model="newNote.topicId" />
-            </label> -->
               <div class="form-buttons">
                 <button type="submit" class="btn save-btn" :disabled="loading">发布</button>
                 <button type="button" class="btn cancel-btn" @click="closePublishModal">取消</button>
@@ -139,20 +214,78 @@
         </div>
       </transition>
 
-      <!-- 添加空状态显示 -->
-      <div v-if="!loading && myNotes.length === 0" class="empty-state">
+      <div v-if="!loading && currentTab === 'notes' && myNotes.length === 0" class="empty-state">
         <img src="/assets/developer.png" alt="没有笔记" />
         <h3>还没有笔记</h3>
         <p>点击"发布笔记"开始创作吧！</p>
       </div>
 
-      <!-- 添加操作反馈提示 -->
       <transition name="fade">
         <div v-if="showMessage" class="message-toast" :class="messageType">
           {{ message }}
         </div>
       </transition>
 
+      <el-dialog
+        v-model="deleteDialogVisible"
+        title="删除确认"
+        width="30%"
+        center
+        :show-close="false"
+        class="delete-dialog"
+      >
+        <div class="delete-dialog-content">
+          <i class="el-icon-warning" style="color: #ff4949; font-size: 24px;"></i>
+          <p>确定要删除这篇笔记吗？</p>
+          <p class="delete-warning">删除后将无法恢复！</p>
+        </div>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="deleteDialogVisible = false">取消</el-button>
+            <el-button type="danger" @click="confirmDelete" :loading="loading">
+              确定删除
+            </el-button>
+          </span>
+        </template>
+      </el-dialog>
+
+      <el-drawer
+        v-model="socialDrawerVisible"
+        :title="drawerType === 'following' ? '关注列表' : '粉丝列表'"
+        direction="rtl"
+        size="35%"
+      >
+        <div class="user-list">
+          <el-table
+            :data="userList"
+            style="width: 100%"
+            v-loading="loading"
+          >
+            <el-table-column label="用户信息" min-width="200">
+              <template #default="{ row }">
+                <div class="user-info">
+                  <el-avatar :size="40" :src="row.avatar" />
+                  <div class="user-details">
+                    <div class="nickname">{{ row.nickname }}</div>
+                    <div class="introduction">{{ row.introduction || '这个人很懒，什么都没写~' }}</div>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template #default="{ row }">
+                <el-button
+                  type="primary"
+                  size="small"
+                  @click="goToUserDetail(row.userId)"
+                >
+                  查看主页
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-drawer>
     </el-card>
   </div>
 </template>
@@ -160,8 +293,11 @@
 <script>
 import axios from 'axios';
 import { getToken } from '@/composables/cookie';
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { likeListService, collectListDetailService } from '@/api/collect.js'
+import { UserFilled, Star } from '@element-plus/icons-vue';
+import { currentUserService, followService, fansService } from '@/api/follow.js';
 
 export default {
   setup() {
@@ -173,6 +309,8 @@ export default {
     const loading = ref(false);
     const error = ref(null);
     const noMoreNotes = ref(false);
+    const currentTab = ref('notes');
+    const likedNotes = ref([]);
 
     const isEditModalOpen = ref(false);
     const isPublishModalOpen = ref(false);
@@ -183,43 +321,37 @@ export default {
       updateTime: "",
       isTop: false,
       visible: 1,
-      imgUris: [] // 初始化为数组
+      imgUris: []
     });
     const newNote = reactive({
       type: 0,
-      imgUris: [], // 初始化为数组
+      imgUris: [],
       title: "",
       content: "",
       topicId: 1
     });
 
-    const status = ref(1); // 1: 正常展示, 2: 查看被删除的笔记
+    const status = ref(1);
 
-    // 添加分页相关的响应式变量
     const currentPage = ref(1);
-    const pageSize = ref(9); // 每页显示9条笔记
+    const pageSize = ref(9);
 
-    // 计算分页后的笔记
     const paginatedNotes = computed(() => {
       const startIndex = (currentPage.value - 1) * pageSize.value;
       const endIndex = startIndex + pageSize.value;
       return sortedNotes.value.slice(startIndex, endIndex);
     });
 
-    // 处理页码改变
     const handlePageChange = (newPage) => {
       currentPage.value = newPage;
-      // 如果接近末尾且还有更多数据，提前加载下一批
       if (newPage * pageSize.value > myNotes.value.length - pageSize.value && !noMoreNotes.value) {
         loadMoreNotes();
       }
     };
 
-    // 计算属性：格式化日期
     const formatDate = (dateString) => {
       if (!dateString) return '';
 
-      // 将后端返回的日期字符串转换为标准格式
       const [datePart, timePart] = dateString.split(' ');
       if (!datePart || !timePart) return '';
 
@@ -228,13 +360,11 @@ export default {
 
       const date = new Date(year, month - 1, day, hour, minute, second);
 
-      // 检查日期是否有效
       if (isNaN(date.getTime())) return '';
 
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     };
 
-    // 获取笔记详情
     const fetchNoteDetails = async (note, token) => {
       try {
         const response = await axios.post(
@@ -249,10 +379,8 @@ export default {
         );
 
         if (response.data.success) {
-          // 将imgUris和updateTime添加到笔记对象中
           note.imgUris = response.data.data.imgUris || [];
           note.updateTime = response.data.data.updateTime;
-          // 如果需要其他详细信息，也可以在这里添加
         } else {
           console.error(`获取笔记详情失败（ID: ${note.id}）:`, response.data.message);
           note.imgUris = [];
@@ -263,7 +391,6 @@ export default {
       }
     };
 
-    // 获取当前用户信息
     const fetchCurrentUser = async () => {
       try {
         const token = getToken();
@@ -287,7 +414,6 @@ export default {
       }
     };
 
-    // 获取用户的笔记
     const fetchMyNotes = async () => {
       if (!userId.value) {
         error.value = '无法获取用户 ID，无法获取笔记列表。';
@@ -300,7 +426,7 @@ export default {
           '/api/note/note/UserNoteList',
           {
             userId: userId.value,
-            size: size.value * 2, // 增加每次加载的数量，确保有足够的数据用于分页
+            size: size.value * 2,
             page: page.value,
             status: status.value
           },
@@ -314,18 +440,16 @@ export default {
         if (response.data.success) {
           const fetchedNotes = response.data.data.map(note => ({
             ...note,
-            imgUris: note.imgUris || [], // 确保imgUris为数组
-            isTop: !!note.isTop // 确保isTop为布尔类型
+            imgUris: note.imgUris || [],
+            isTop: !!note.isTop
           }));
           if (fetchedNotes.length < size.value) {
             noMoreNotes.value = true;
           }
 
-          // 并行获取所有笔记的详情
           const detailPromises = fetchedNotes.map(note => fetchNoteDetails(note, token));
           await Promise.all(detailPromises);
 
-          // 将带有详情的笔记添加到myNotes中
           myNotes.value = [...myNotes.value, ...fetchedNotes];
         } else {
           throw new Error(response.data.message || '获取笔记列表失败。');
@@ -338,7 +462,6 @@ export default {
       }
     };
 
-    // 计算属性：排序后的笔记
     const sortedNotes = computed(() => {
       return myNotes.value.slice().sort((a, b) => {
         if (a.isTop === b.isTop) {
@@ -348,20 +471,16 @@ export default {
       });
     });
 
-    // 切换笔记状态
     const changeStatus = (newStatus) => {
       if (status.value !== newStatus) {
         status.value = newStatus;
-        // 重置笔记列表和分页信息
         myNotes.value = [];
         page.value = 1;
         noMoreNotes.value = false;
-        // 重新获取笔记
         fetchMyNotes();
       }
     };
 
-    // 加载更多笔记
     const loadMoreNotes = () => {
       if (!noMoreNotes.value && !loading.value) {
         page.value++;
@@ -369,15 +488,12 @@ export default {
       }
     };
 
-    // 编辑笔记
     const editNote = (note) => {
       Object.assign(currentNote, note);
-      // 确保imgUris是数组
       currentNote.imgUris = note.imgUris ? [...note.imgUris] : [];
       isEditModalOpen.value = true;
     };
 
-    // 提交编辑笔记
     const submitEditNote = async () => {
       try {
         loading.value = true;
@@ -386,12 +502,12 @@ export default {
           '/api/note/note/update',
           {
             id: currentNote.id,
-            type: 0,  // 设置默认type为0
+            type: 0,
             title: currentNote.title,
             content: currentNote.content,
             imgUris: currentNote.imgUris,
-            topicId: 1,  // 设置默认topicId为1
-            videoUri: null  // 添加videoUri字段，设为null
+            topicId: 1,
+            videoUri: null
           },
           {
             headers: {
@@ -401,7 +517,6 @@ export default {
           }
         );
         if (response.data.success) {
-          // 更新笔记列表
           const index = myNotes.value.findIndex(note => note.id === currentNote.id);
           if (index !== -1) {
             myNotes.value[index] = {
@@ -413,23 +528,21 @@ export default {
               isTop: currentNote.isTop
             };
           }
-          showToast('笔记已更新', 'success');  // 使用 showToast 替代 alert
+          showToast('笔记已更新', 'success');
           closeEditModal();
         } else {
           throw new Error(response.data.message || '更新笔记失败。');
         }
       } catch (err) {
         console.error('更新笔记时出错:', err);
-        showToast(err.message || '更新笔记时出错。', 'error');  // 使用 showToast 替代 alert
+        showToast(err.message || '更新笔记时出错。', 'error');
       } finally {
         loading.value = false;
       }
     };
 
-    // 关闭编辑模态窗口
     const closeEditModal = () => {
       isEditModalOpen.value = false;
-      // 重置当前笔记
       Object.assign(currentNote, {
         id: null,
         title: "",
@@ -441,14 +554,12 @@ export default {
       });
     };
 
-    // 发布笔记
     const openPublishModal = () => {
       isPublishModalOpen.value = true;
     };
 
     const closePublishModal = () => {
       isPublishModalOpen.value = false;
-      // 重置新笔记
       Object.assign(newNote, {
         type: 0,
         imgUris: [],
@@ -466,7 +577,7 @@ export default {
           '/api/note/note/publish',
           {
             type: newNote.type,
-            imgUris: newNote.imgUris,  // 发送图片URL数组（MinIO生成的访问链接）
+            imgUris: newNote.imgUris,
             title: newNote.title,
             content: newNote.content,
             topicId: newNote.topicId
@@ -481,7 +592,6 @@ export default {
         if (response.data.success) {
           alert('笔记已发布。');
           console.log(newNote.imgUris);
-          // 重新加载笔记列表
           myNotes.value = [];
           page.value = 1;
           noMoreNotes.value = false;
@@ -492,21 +602,19 @@ export default {
         }
       } catch (err) {
         console.error('发布笔记时出错:', err);
-        alert(err.message || '发布笔记���出错。');
+        alert(err.message || '发布笔记时出错。');
       } finally {
         loading.value = false;
       }
     };
 
-    // 处理图片上传（发布笔记）
     const handlePublishImageUpload = async (event) => {
       const files = event.target.files;
       if (!files.length) return;
 
-      // 检查是否超过最大图片数量限制
       if (newNote.imgUris.length + files.length > 4) {
         alert('最多只能上传4张图片');
-        event.target.value = ''; // 清空文件输入
+        event.target.value = '';
         return;
       }
 
@@ -536,12 +644,10 @@ export default {
         }
       }
 
-      // 将所有上传的图片URL添加到 newNote.imgUris 中
       newNote.imgUris = [...newNote.imgUris, ...uploadedImageUrls];
       event.target.value = '';
     };
 
-    // 处理图片上传（编辑笔记）
     const handleEditImageUpload = async (event) => {
       const files = event.target.files;
       if (!files.length) return;
@@ -550,20 +656,17 @@ export default {
 
       for (let file of files) {
         const formData = new FormData();
-        formData.append('file', file); // 根据后端接口文档，字段名为 'file'
+        formData.append('file', file);
 
         try {
-          // 上传文件到后端
           const response = await axios.post('/file/upload', formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
-              // 如果需要认证，可以添加 Authorization 头
               'Authorization': `Bearer ${getToken()}`,
             },
           });
 
           if (response.data.success) {
-            // 获取图片URL并添加到数组中
             uploadedImageUrls.push(response.data.data);
           } else {
             throw new Error(response.data.message || '图片上传失败');
@@ -571,37 +674,42 @@ export default {
         } catch (err) {
           console.error('上传图片失败:', err);
           alert('上传图片失败: ' + (err.response?.data?.message || err.message));
-          return; // 如果有一个文件上传失败，可以选择停止后续上传
+          return;
         }
       }
 
-      // 将所有上传的图片URL添加到 currentNote.imgUris 中
       currentNote.imgUris = [...currentNote.imgUris, ...uploadedImageUrls];
 
-      // 清空文件输入
       event.target.value = '';
     };
 
-    // 移除图片
     const removeImage = (imgUrisArray, index) => {
       imgUrisArray.splice(index, 1);
     };
 
-    // 删除笔记
-    const deleteNote = async (note) => {
-      if (!confirm('确定要删除这篇笔记吗？')) return;
+    const deleteDialogVisible = ref(false);
+    const noteToDelete = ref(null);
+
+    const deleteNote = (note) => {
+      noteToDelete.value = note;
+      deleteDialogVisible.value = true;
+    };
+
+    const confirmDelete = async () => {
+      if (!noteToDelete.value) return;
+      
       try {
         loading.value = true;
         const token = getToken();
         const response = await axios.post(
           '/api/note/note/delete',
           {
-            type: note.type,
-            videoUri: note.videoUri || null,
-            title: note.title,
-            content: note.content,
-            topicId: note.topicId,
-            id: note.id
+            type: noteToDelete.value.type,
+            videoUri: noteToDelete.value.videoUri || null,
+            title: noteToDelete.value.title,
+            content: noteToDelete.value.content,
+            topicId: noteToDelete.value.topicId,
+            id: noteToDelete.value.id
           },
           {
             headers: {
@@ -610,28 +718,29 @@ export default {
             },
           }
         );
+        
         if (response.data.success) {
-          alert('笔记已删除。');
-          // 从列表中移除
-          myNotes.value = myNotes.value.filter(n => n.id !== note.id);
+          showToast('笔记删除成功', 'success');
+          myNotes.value = myNotes.value.filter(n => n.id !== noteToDelete.value.id);
+          deleteDialogVisible.value = false;
         } else {
           throw new Error(response.data.message || '删除笔记失败。');
         }
       } catch (err) {
         console.error('删除笔记时出错:', err);
-        alert(err.message || '删除笔记时出错。');
+        showToast(err.message || '删除笔记失败', 'error');
       } finally {
         loading.value = false;
+        noteToDelete.value = null;
       }
     };
 
-    // 恢复已删除的笔记
     const restoreNote = async (note) => {
       try {
         loading.value = true;
         const token = getToken();
         const response = await axios.post(
-          '/api/note/note/restore', // 确保后端有此 API
+          '/api/note/note/restore',
           {
             id: note.id
           },
@@ -644,7 +753,6 @@ export default {
         );
         if (response.data.success) {
           alert('笔记已恢复。');
-          // 从已删除的列表中移除
           myNotes.value = myNotes.value.filter(n => n.id !== note.id);
         } else {
           throw new Error(response.data.message || '恢复笔记失败。');
@@ -657,7 +765,6 @@ export default {
       }
     };
 
-    // 置顶或取消置顶笔记
     const toggleTop = async (note) => {
       try {
         loading.value = true;
@@ -678,7 +785,6 @@ export default {
         if (response.data.success) {
           note.isTop = !note.isTop;
           alert(note.isTop ? '笔记已置顶。' : '笔记已取消置顶。');
-          // 无需手动排序，因为 sortedNotes 会自动响应变化
         } else {
           throw new Error(response.data.message || '操作失败。');
         }
@@ -690,7 +796,6 @@ export default {
       }
     };
 
-    // 切换笔记可见性
     const toggleVisibility = async (note) => {
       try {
         loading.value = true;
@@ -699,7 +804,7 @@ export default {
           '/api/note/note/visible/onlyme',
           {
             id: note.id,
-            visible: note.visible === 1 ? 0 : 1 // 修正字段名和逻辑
+            visible: note.visible === 1 ? 0 : 1
           },
           {
             headers: {
@@ -722,26 +827,62 @@ export default {
       }
     };
 
-    // 组件挂载时获取用户信息和初始笔记
-    fetchCurrentUser();
+    const fetchLikedNotes = async () => {
+      try {
+        loading.value = true;
+        const params = {
+          size: 1000,
+          userId: userId.value,
+          page: 1
+        };
+        const result = await likeListService(params);
+        
+        const updatedArticles = await Promise.all(
+          result.data.map(async (article) => {
+            const detailResult = await collectListDetailService({ id: article.id });
+            return {
+              ...article,
+              ...detailResult.data,
+              imgUris: detailResult.data.imgUris,
+              creatorName: detailResult.data.creatorName || '未知用户',
+              avatar: detailResult.data.avatar || '/assets/developer.png',
+              updateTime: detailResult.data.updateTime
+            };
+          })
+        );
+        
+        likedNotes.value = updatedArticles;
+      } catch (err) {
+        console.error('获取点赞列表失败:', err);
+        error.value = '获取点赞列表失败';
+      } finally {
+        loading.value = false;
+      }
+    };
 
-    // 修改跳转函数
+    const switchTab = async (tab) => {
+      currentTab.value = tab;
+      currentPage.value = 1;
+      
+      if (tab === 'likes' && likedNotes.value.length === 0) {
+        await fetchLikedNotes();
+      }
+    };
+
     const goToNoteDetail = (id) => {
       router.push({
         name: 'NoteDetail',
         params: {
           id,
-          userId: userId.value // 使用已有的 userId
+          userId: userId.value
         }
       });
     };
 
-    // 在 setup 中添加消息提示相关的响应式变量
     const showMessage = ref(false);
     const message = ref('');
     const messageType = ref('success');
 
-    // 添加显示消息的方法
     const showToast = (msg, type = 'success') => {
       message.value = msg;
       messageType.value = type;
@@ -751,15 +892,112 @@ export default {
       }, 3000);
     };
 
+    const socialDrawerVisible = ref(false);
+    const drawerType = ref('following');
+    const followCount = ref(0);
+    const fansCount = ref(0);
+    const userList = ref([]);
+
+    const showFollowings = async () => {
+      drawerType.value = 'following';
+      userList.value = [];
+      socialDrawerVisible.value = true;
+      await loadUsers();
+    };
+
+    const showFans = async () => {
+      drawerType.value = 'fans';
+      userList.value = [];
+      socialDrawerVisible.value = true;
+      await loadUsers();
+    };
+
+    const loadUsers = async () => {
+      if (loading.value) return;
+      loading.value = true;
+      
+      try {
+        const params = {
+          userId: userId.value,
+          pageNo: 1,
+          pageSize: 20
+        };
+        
+        const service = drawerType.value === 'following' ? followService : fansService;
+        const result = await service(params);
+        
+        if (result.success) {
+          if (result.data && Array.isArray(result.data)) {
+            userList.value = result.data.map(user => ({
+              ...user,
+              avatar: user.avatar || '/assets/developer.png',
+              nickname: user.nickname || '未设置昵称',
+              introduction: user.introduction || '这个人很懒，什么都没写~'
+            }));
+          } else {
+            userList.value = [];
+          }
+        } else {
+          throw new Error(result.message || '获取用户列表失败');
+        }
+      } catch (error) {
+        console.error('加载用户失败:', error);
+        ElMessage.error(error.message || '加载用户列表失败');
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const goToUserDetail = (userId) => {
+      router.push(`/user/${userId}`);
+      socialDrawerVisible.value = false;
+    };
+
+    const initSocialData = async () => {
+      try {
+        const result = await currentUserService();
+        if (result.success) {
+          userId.value = result.data.id;
+          const [followRes, fansRes] = await Promise.all([
+            followService({ 
+              userId: userId.value, 
+              pageNo: 1,
+              pageSize: 1
+            }),
+            fansService({ 
+              userId: userId.value, 
+              pageNo: 1,
+              pageSize: 1
+            })
+          ]);
+
+          if (followRes.success) {
+            followCount.value = followRes.totalCount || 0;
+          }
+          if (fansRes.success) {
+            fansCount.value = fansRes.totalCount || 0;
+          }
+        }
+      } catch (error) {
+        console.error('初始化社交数据失败:', error);
+      }
+    };
+
+    onMounted(() => {
+      initSocialData();
+    });
+
+    fetchCurrentUser();
+
     return {
       myNotes,
-      sortedNotes, // 添加计算属性到返回对象
-      status, // 添加 status 变量
+      sortedNotes,
+      status,
       loading,
       error,
       noMoreNotes,
       loadMoreNotes,
-      changeStatus, // 添加过滤方法到返回对象
+      changeStatus,
       editNote,
       isEditModalOpen,
       currentNote,
@@ -772,7 +1010,7 @@ export default {
       newNote,
       submitPublishNote,
       deleteNote,
-      restoreNote, // 添加恢复方法到返回对象
+      restoreNote,
       toggleTop,
       toggleVisibility,
       handlePublishImageUpload,
@@ -787,6 +1025,20 @@ export default {
       message,
       messageType,
       showToast,
+      currentTab,
+      likedNotes,
+      switchTab,
+      deleteDialogVisible,
+      noteToDelete,
+      confirmDelete,
+      socialDrawerVisible,
+      drawerType,
+      followCount,
+      fansCount,
+      userList,
+      showFollowings,
+      showFans,
+      goToUserDetail,
     };
   },
 };
@@ -796,29 +1048,25 @@ export default {
 .my-notes-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100%;
   width: 100%;
-  /* 占满窗口高度 */
-  overflow: hidden;
-  /* 禁止外部滚动 */
-  padding: 0;
+  min-height: calc(100vh - 120px);
   background-color: #f5f5f5;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .note-detail-card {
   width: 90%;
   max-width: 1200px;
-  height: 100%;
-  /* 尽可能覆盖窗口 */
-  overflow-y: auto;
-  /* 允许内容滚动 */
-  padding: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
   background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  min-height: calc(100vh - 160px);
+  position: relative;
 }
-
 
 h1 {
   text-align: center;
@@ -826,7 +1074,6 @@ h1 {
   color: #343a40;
 }
 
-/* 过滤按钮样式 */
 .filter-actions {
   display: flex;
   justify-content: center;
@@ -853,32 +1100,35 @@ h1 {
   background-color: #5a6268;
 }
 
-.actions {
+.header-actions {
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 20px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .publish-btn {
-  padding: 10px 20px;
-  font-size: 1em;
+  padding: 8px 24px;
+  font-size: 14px;
   color: #fff;
-  background-color: #17a2b8;
+  background-color: #409eff;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .publish-btn:hover {
-  background-color: #138496;
+  background-color: #66b1ff;
 }
 
 .notes-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  margin-bottom: 20px;
+  padding: 20px;
+  margin-bottom: 60px;
 }
 
 .my-note-card {
@@ -919,7 +1169,6 @@ h1 {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 3;
-  /* 显示三行 */
   -webkit-box-orient: vertical;
 }
 
@@ -928,15 +1177,17 @@ h1 {
   color: #999;
 }
 
-/* 修改图片相关样式 */
 .note-images {
   width: 100%;
-  margin-bottom: 15px;
-  position: relative;
   height: 200px;
+  position: relative;
   overflow: hidden;
   border-radius: 10px;
   background: #f8f9fa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .note-image {
@@ -944,6 +1195,12 @@ h1 {
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+}
+
+.note-images img[src="/assets/developer.png"] {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .note-images:hover .note-image {
@@ -1083,7 +1340,6 @@ h1 {
   100% { transform: rotate(360deg); }
 }
 
-/* 模态窗口样式 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1228,7 +1484,6 @@ h1 {
   background-color: #5a6268;
 }
 
-/* 过渡效果 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s;
@@ -1239,65 +1494,49 @@ h1 {
   opacity: 0;
 }
 
-/* 响应式设计 */
 @media (max-width: 768px) {
   .notes-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .my-note-card p {
-    height: 60px;
-    -webkit-line-clamp: 2;
+  
+  .note-images img[src="/assets/developer.png"] {
+    width: 70%;
   }
 }
 
 @media (max-width: 480px) {
+  .my-notes-container {
+    padding: 10px;
+  }
+
   .notes-grid {
     grid-template-columns: 1fr;
+    padding: 15px;
   }
-
-  .my-note-card p {
-    height: 80px;
-    -webkit-line-clamp: 3;
+  
+  .note-images img[src="/assets/developer.png"] {
+    width: 80%;
   }
-
-  .modal {
-    padding: 20px;
-  }
-
-  .form-buttons {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .save-btn,
-  .cancel-btn {
-    width: 100%;
-  }
-
-  .image-preview {
-    width: 80px;
-    height: 80px;
-  }
-
-  .note-image {
-    max-height: 150px;
-  }
-
-  .note-images img {
-    width: 100%;
+  
+  .pagination-container {
+    padding: 8px 15px;
+    bottom: 10px;
   }
 }
 
-/* 修改分页器容器样式 */
 .pagination-container {
-  display: flex;
-  justify-content: center;
-  padding: 20px 0;
-  margin-top: 30px;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: fit-content;
+  background: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
-/* 添加分页器组件样式 */
 :deep(.el-pagination) {
   text-align: center;
   font-size: 14px;
@@ -1330,7 +1569,6 @@ h1 {
   margin: 0 3px;
 }
 
-/* 响应式调整 */
 @media (max-width: 480px) {
   :deep(.el-pagination) {
     font-size: 12px;
@@ -1351,20 +1589,37 @@ h1 {
   }
 }
 
-/* 添加空状态样式 */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
   text-align: center;
-  padding: 40px;
-  color: #6c757d;
+  min-height: 400px;
 }
 
 .empty-state img {
-  width: 120px;
-  margin-bottom: 20px;
-  opacity: 0.5;
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  margin-bottom: 24px;
+  opacity: 0.6;
 }
 
-/* 添加消息提示样式 */
+.empty-state h3 {
+  color: #606266;
+  font-size: 18px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.empty-state p {
+  color: #909399;
+  font-size: 14px;
+  margin: 0;
+}
+
 .message-toast {
   position: fixed;
   top: 20px;
@@ -1400,16 +1655,248 @@ h1 {
   border-color: #ebccd1;
 }
 
-/* 添加禁用状态的样式 */
 input[type="file"]:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* 可以添加一个提示文字显示剩余可上传数量 */
 .image-upload-info {
   font-size: 0.8em;
   color: #666;
   margin-top: 4px;
+}
+
+.tab-buttons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 0 20px;
+}
+
+.tab-btn {
+  padding: 8px 24px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #f5f7fa;
+  color: #606266;
+}
+
+.tab-btn.active {
+  background-color: #409eff;
+  color: #fff;
+}
+
+.tab-btn:hover:not(.active) {
+  background-color: #e4e7ed;
+}
+
+@media (max-width: 480px) {
+  .tab-buttons {
+    padding: 0 15px;
+  }
+  
+  .tab-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+}
+
+.note-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ebeef5;
+}
+
+.creator-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.creator-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ebeef5;
+}
+
+.creator-name {
+  font-size: 13px;
+  color: #606266;
+}
+
+.update-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    padding: 15px;
+  }
+  
+  .publish-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+}
+
+.delete-dialog :deep(.el-dialog__header) {
+  border-bottom: 1px solid #ebeef5;
+  padding: 20px;
+  margin: 0;
+}
+
+.delete-dialog :deep(.el-dialog__body) {
+  padding: 30px 20px;
+}
+
+.delete-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid #ebeef5;
+  padding: 15px 20px;
+}
+
+.delete-dialog-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+}
+
+.delete-warning {
+  color: #ff4949;
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.message-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-toast.success {
+  background-color: #f0f9eb;
+  border: 1px solid #e1f3d8;
+  color: #67c23a;
+}
+
+.message-toast.error {
+  background-color: #fef0f0;
+  border: 1px solid #fde2e2;
+  color: #f56c6c;
+}
+
+.social-stats {
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.stat-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.stat-content {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  margin-right: 16px;
+  font-size: 20px;
+}
+
+.following-icon {
+  background-color: #ecf5ff;
+  color: #409eff;
+}
+
+.fans-icon {
+  background-color: #fdf6ec;
+  color: #e6a23c;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.stat-label {
+  color: #909399;
+  font-size: 14px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.nickname {
+  font-weight: 500;
+  color: #303133;
+}
+
+.introduction {
+  font-size: 12px;
+  color: #909399;
+}
+
+@media (max-width: 768px) {
+  .stat-cards {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

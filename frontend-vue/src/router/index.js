@@ -5,9 +5,6 @@ import Admin from '@/layouts/admin/admin.vue'
 import Login from '@/pages/login.vue'
 import NoteList from '@/pages/note/list.vue'
 import NoteDetail from '@/pages/note/detail.vue'
-import Follow from '@/pages/community/follow.vue'
-import Collect from '@/pages/community/collect.vue'
-import LikeList from '@/pages/community/like.vue'
 import TrainingAnalysis from '@/pages/training/analysis.vue'
 import UserProfile from '@/pages/user/profile.vue'
 import UserView from '@/pages/user/view.vue'
@@ -83,7 +80,7 @@ const routes = [
                 component: NoteDetail,
                 name: "NoteDetail",
                 meta: {
-                    title: '笔记详情'
+                    title: '帖子详情'
                 }
             },
             {
@@ -98,28 +95,7 @@ const routes = [
                 path: "note/list",
                 component: NoteList,
                 meta: {
-                    title: '我的笔记'
-                }
-            },
-            {
-                path: "community/follow",
-                component: Follow,
-                meta: {
-                    title: '关注列表'
-                }
-            },
-            {
-                path: "community/collect",
-                component: Collect,
-                meta: {
-                    title: '我的收藏'
-                }
-            },
-            {
-                path: "community/like",
-                component: LikeList,
-                meta: {
-                    title: '我的点赞'
+                    title: '我的主页'
                 }
             },
             {
@@ -129,16 +105,16 @@ const routes = [
                     title: '社区首页'
                 }
             },
+            {
+                path: '/user/:userId',
+                name: 'UserDetail',
+                component: UserView,
+                meta: {
+                    title: '用户详情'
+                }
+            }
         ]
     },
-    {
-        path: '/user/:userId',
-        name: 'UserDetail',
-        component: UserView,
-        meta: {
-            title: '用户详情'
-        }
-    }
 ]
 
 const router = createRouter({
