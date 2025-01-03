@@ -15,6 +15,18 @@
             type="info" 
             effect="dark"
           >成员</el-tag>
+          <!-- 添加创建人信息 -->
+          <div v-if="creatorInfo.id" class="creator-info-inline">
+            <span class="creator-label">创建人：</span>
+            <el-avatar 
+              :size="32" 
+              :src="creatorInfo.avatar"
+              @click="goToUserDetail(creatorInfo.id)"
+            />
+            <span class="creator-name-inline" @click="goToUserDetail(creatorInfo.id)">
+              {{ creatorInfo.nickName }}
+            </span>
+          </div>
         </div>
         <div class="action-buttons">
           <el-button 
@@ -85,35 +97,8 @@
               <div class="description">{{ clubInfo.description }}</div>
             </div>
             <div class="info-item">
-              <label>创建时间：</label>
-              <span>{{ clubInfo.createTime }}</span>
-            </div>
-            <div class="info-item">
               <label>更新时间：</label>
-              <span>{{ clubInfo.updateTime }}</span>
-            </div>
-          </div>
-        </el-card>
-
-        <!-- 创建人信息卡片 -->
-        <el-card class="creator-card" v-if="creatorInfo.id">
-          <template #header>
-            <div class="card-header">
-              <h3>创建人信息</h3>
-            </div>
-          </template>
-          
-          <div class="creator-info">
-            <el-avatar 
-              :size="80" 
-              :src="creatorInfo.avatar"
-              @click="goToUserDetail(creatorInfo.id)"
-            />
-            <div class="creator-details">
-              <div class="creator-name" @click="goToUserDetail(creatorInfo.id)">
-                {{ creatorInfo.nickName }}
-              </div>
-              <div class="creator-intro">{{ creatorInfo.introduction }}</div>
+              <span>{{ formatDate(clubInfo.updateTime) }}</span>
             </div>
           </div>
         </el-card>
@@ -159,7 +144,6 @@
                   v-for="activity in activities" 
                   :key="activity.activityId"
                   class="activity-card"
-                  @click="showActivityDetails(activity)"
                 >
                   <div class="activity-header">
                     <h4>{{ activity.title }}</h4>
@@ -167,11 +151,11 @@
                   <div class="activity-meta">
                     <div class="time">
                       <el-icon><Timer /></el-icon>
-                      {{ activity.startTime }}
+                      {{ formatDate(activity.startTime) }}
                     </div>
                     <div class="time">
                       <el-icon><Timer /></el-icon>
-                      {{ activity.endTime }}
+                      {{ formatDate(activity.endTime) }}
                     </div>
                   </div>
                 </div>
@@ -395,49 +379,6 @@
         </span>
       </template>
     </el-dialog>
-
-    <!-- 活动详情对话框 -->
-    <el-dialog 
-      v-model="activityDetailsVisible" 
-      :title="currentActivity.title"
-      width="600px"
-    >
-      <div v-loading="activityDetailsLoading">
-        <div class="activity-details" v-if="currentActivity.activityId">
-          <div class="detail-item">
-            <label>活动内容：</label>
-            <div class="content">{{ currentActivity.content }}</div>
-          </div>
-          <div class="detail-item">
-            <label>开始时间：</label>
-            <span>{{ currentActivity.startTime }}</span>
-          </div>
-          <div class="detail-item">
-            <label>结束时间：</label>
-            <span>{{ currentActivity.endTime }}</span>
-          </div>
-          <div class="detail-item">
-            <label>创建时间：</label>
-            <span>{{ currentActivity.createTime }}</span>
-          </div>
-          <div class="detail-item">
-            <label>更新时间：</label>
-            <span>{{ currentActivity.updateTime }}</span>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="activityDetailsVisible = false">关闭</el-button>
-          <el-button 
-            type="primary" 
-            @click="goToActivityDetail(currentActivity.activityId)"
-          >
-            查看详情
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -454,12 +395,26 @@ import {
   deleteClubService,
   updateClubService,
   publishActivityService,
-  getClubActivityListService,
-  getActivityDetailsService
+  getClubActivityListService
 } from '@/api/club'
 import { getUserInfoByIdService } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+
+// 添加日期格式化函数
+const formatDate = (dateString) => {
+  if (!dateString) return '暂无数据'
+  const date = new Date(dateString)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -535,13 +490,8 @@ const activityRules = {
 const activitiesLoading = ref(false)
 const activities = ref([])
 const activityPage = ref(1)
-const activitySize = ref(10)
+const activitySize = ref(2)
 const activityTotal = ref(0)
-
-// 活动详情相关
-const activityDetailsVisible = ref(false)
-const activityDetailsLoading = ref(false)
-const currentActivity = ref({})
 
 // 判断当前用户是否是创建者
 const isCreator = computed(() => {
@@ -938,10 +888,8 @@ const handlePublishActivity = async () => {
     if (res.success) {
       ElMessage.success('活动发布成功')
       activityDialogVisible.value = false
-      // 可以跳转到活动详情页
-      if (res.data) {
-        router.push(`/activity/${res.data}`)
-      }
+      // 重新加载活动列表
+      await loadActivities()
     } else {
       ElMessage.error(res.message || '发布失败')
     }
@@ -973,8 +921,8 @@ const loadActivities = async () => {
     if (res.success) {
       activities.value = res.data || []
       console.log('Loaded activities:', activities.value);
-      // 使用返回的数组长度作为总数
-      activityTotal.value = activities.value.length
+      // 如果返回的数据长度等于页大小，说明可能还有下一页
+      activityTotal.value = activityPage.value * activitySize.value + (activities.value.length === activitySize.value ? activitySize.value : 0)
     } else {
       console.warn('获取活动列表失败:', res.message)
     }
@@ -984,31 +932,6 @@ const loadActivities = async () => {
   } finally {
     activitiesLoading.value = false
   }
-}
-
-// 显示活动详情
-const showActivityDetails = async (activity) => {
-  activityDetailsVisible.value = true
-  activityDetailsLoading.value = true
-  try {
-    const res = await getActivityDetailsService({ activityId: activity.activityId })
-    if (res.success) {
-      currentActivity.value = res.data
-    } else {
-      ElMessage.error(res.message || '获取活动详情失败')
-    }
-  } catch (error) {
-    console.error('获取活动详情出错:', error)
-    ElMessage.error('获取活动详情失败')
-  } finally {
-    activityDetailsLoading.value = false
-  }
-}
-
-// 跳转到活动详情页
-const goToActivityDetail = (activityId) => {
-  activityDetailsVisible.value = false
-  router.push(`/activity/${activityId}`)
 }
 
 onMounted(async () => {
@@ -1067,6 +990,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .club-title h1 {
@@ -1205,43 +1129,36 @@ onMounted(async () => {
   white-space: pre-wrap;
 }
 
-.creator-info {
+.creator-info-inline {
   display: flex;
-  gap: 28px;
-  padding: 24px;
-  background-color: #fff;
-  border-radius: 16px;
-}
-
-.creator-details {
-  flex: 1;
-}
-
-.creator-name {
-  font-size: 22px;
-  font-weight: 700;
-  background: linear-gradient(120deg, #409EFF, #36acfe);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  cursor: pointer;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 20px;
   transition: all 0.3s ease;
-  letter-spacing: -0.3px;
 }
 
-.creator-name:hover {
-  transform: translateX(8px);
-  opacity: 0.9;
+.creator-info-inline:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
-.creator-intro {
+.creator-label {
   color: #606266;
-  line-height: 1.8;
-  font-size: 15px;
-  padding: 16px;
-  background-color: #f8f9fb;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  font-size: 14px;
+}
+
+.creator-name-inline {
+  color: #409EFF;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.creator-name-inline:hover {
+  opacity: 0.8;
 }
 
 .activity-grid {
