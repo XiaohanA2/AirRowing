@@ -80,7 +80,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
                 <div v-for="(news, index) in latestNews" 
                      :key="index" 
-                     class="news-card bg-white rounded-xl overflow-hidden shadow-lg"
+                     class="news-card bg-white rounded-xl overflow-hidden shadow-lg cursor-pointer"
+                     @click="openNewsLink(news.link)"
                      v-motion
                      :initial="{ opacity: 0, scale: 0.8 }"
                      :enter="{ opacity: 1, scale: 1 }"
@@ -92,9 +93,17 @@
                     <div class="p-6">
                         <h3 class="text-xl font-semibold mb-3 hover:text-blue-600 transition-colors">{{ news.title }}</h3>
                         <p class="text-gray-600">{{ news.description }}</p>
-                        <div class="mt-4 flex items-center text-sm text-gray-500">
-                            <el-icon class="mr-2"><Calendar /></el-icon>
-                            {{ news.date }}
+                        <div class="mt-4 flex items-center justify-between">
+                            <div class="flex items-center text-sm text-gray-500">
+                                <el-icon class="mr-2"><Calendar /></el-icon>
+                                {{ news.date }}
+                            </div>
+                            <el-button type="text" class="text-blue-600 hover:text-blue-800">
+                                阅读更多
+                                <el-icon class="ml-1">
+                                    <ArrowRight />
+                                </el-icon>
+                            </el-button>
                         </div>
                     </div>
                 </div>
@@ -107,7 +116,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { 
     Trophy, UserFilled, Histogram, Calendar,
-    User, Medal, DataLine, Star
+    User, Medal, DataLine, Star, ArrowRight
 } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import CountUp from 'vue-countup-v3'
@@ -152,22 +161,25 @@ const features = [
 
 const latestNews = ref([
     {
-        title: '2024赛艇春季赛事预告',
+        title: '2025赛艇春季赛事预告',
         description: '即将开启的春季赛事，带来更多精彩对决',
         image: new URL('@/assets/images/news-1.jpg', import.meta.url).href,
-        date: '2024-03-15'
+        date: '2024-12-31',
+        link: 'https://www.aislharrow.com/rowing-regatta/zh/'
     },
     {
         title: '训练技巧分享',
         description: '专业教练为您解析赛艇技巧要点',
         image: new URL('@/assets/images/news-2.jpg', import.meta.url).href,
-        date: '2024-03-10'
+        date: '2024-11-11',
+        link: 'https://www.sohu.com/a/407660155_120763602'
     },
     {
         title: '社区活动回顾',
         description: '回顾上周末精彩的社区联谊活动',
         image: new URL('@/assets/images/news-3.jpg', import.meta.url).href,
-        date: '2024-03-05'
+        date: '2024-12-05',
+        link: 'https://news.qq.com/rain/a/20240926A0ACCG00'
     }
 ])
 
@@ -179,14 +191,14 @@ const stats = [
         icon: User
     },
     { 
-        value: 200, 
+        value: 100, 
         suffix: '+', 
         label: '专业教练',
         icon: Medal
     },
     { 
-        value: 1000, 
-        suffix: 'K+', 
+        value: 5000, 
+        suffix: '+', 
         label: '训练记录',
         icon: DataLine
     },
@@ -197,6 +209,12 @@ const stats = [
         icon: Star
     }
 ]
+
+const openNewsLink = (link) => {
+    if (link) {
+        window.open(link, '_blank')
+    }
+}
 </script>
 
 <style scoped>
@@ -315,5 +333,11 @@ const stats = [
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* 添加按钮悬停效果 */
+.el-button.text-blue-600:hover {
+    transform: translateX(5px);
+    transition: transform 0.3s ease;
 }
 </style> 

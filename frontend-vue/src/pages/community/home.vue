@@ -1,28 +1,46 @@
 <template>
-  <div class="note-container">
-    <el-card class="note-display-area" shadow="hover">
-      <div class="note-cards">
-        <el-row :gutter="20" justify="center">
-          <el-col :span="8" v-for="note in notesWithPlaceholders" :key="note.id || note.placeholder">
-            <el-card class="note-card" shadow="hover" :class="{ 'placeholder-card': note.placeholder }"
-              @click="goToNoteDetail(note.id, note.creatorId)">
-
-              <div v-if="!note.placeholder">
-                <!-- 默认显示 developer.png，如果 note.imgUris 存在则覆盖 -->
-                <img :src="note.imgUris && note.imgUris[0] ? note.imgUris[0] : '/assets/developer.png'"
-                  @error="handleImageError" alt="Note Image" class="note-image" />
-                <h3>{{ note.title }}</h3>
-                <p>Updated: {{ note.updateTime }}</p>
-                <div class="creator-info">
-                  <img :src="note.avatar" alt="Creator Avatar" class="creator-avatar" />
-                  <span>{{ note.creatorName }}</span>
-                </div>
-              </div>
-            </el-card>
-          </el-col>
-        </el-row>
+  <div class="page-container">
+    <el-card class="content-card" shadow="never">
+      <div class="header-section mb-6">
+        <h2 class="text-2xl font-bold">社区动态</h2>
+        <p class="text-gray-600 mt-2">发现精彩的赛艇故事</p>
       </div>
-      <div class="pagination-container">
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <el-card v-for="note in notesWithPlaceholders" 
+                :key="note.id || note.placeholder"
+                class="note-card" 
+                :class="{ 'placeholder-card': note.placeholder }"
+                shadow="hover"
+                @click="goToNoteDetail(note.id, note.creatorId)">
+          
+          <template v-if="!note.placeholder">
+            <div class="image-container mb-4">
+              <div class="image-wrapper">
+                <img 
+                  :src="note.imgUris && note.imgUris[0] ? note.imgUris[0] : '/assets/developer.png'"
+                  @error="handleImageError" 
+                  alt="Note Image" 
+                  class="note-image"
+                />
+                <div class="image-overlay"></div>
+              </div>
+            </div>
+
+            <h3 class="text-lg font-semibold mb-2 line-clamp-2">{{ note.title }}</h3>
+            
+            <div class="flex items-center justify-between mt-4">
+              <div class="creator-info flex items-center">
+                <img :src="note.avatar" alt="Creator Avatar" class="creator-avatar" />
+                <span class="ml-2 text-sm text-gray-600">{{ note.creatorName }}</span>
+              </div>
+              <span class="text-sm text-gray-500">{{ note.updateTime }}</span>
+            </div>
+          </template>
+        </el-card>
+      </div>
+
+      <div class="flex justify-center mt-8">
         <el-pagination
           v-model:current-page="currentPage"
           :page-size="pageSize"
@@ -117,115 +135,54 @@ export default {
 </script>
 
 <style scoped>
-.note-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 73vh;
-  overflow: hidden;
+.page-container {
+  padding: 24px;
+  min-height: 100vh;
+  background-color: #f5f7fa;
 }
 
-.note-display-area {
-  width: 100%;
-  max-height: 100%;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.note-cards {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+.content-card {
+  background-color: white;
+  border-radius: 12px;
 }
 
 .note-card {
-  margin-bottom: 20px;
-  text-align: center;
-  height: 220px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
 }
 
 .note-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
 }
 
-.note-card:not(.placeholder-card)::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 0.03));
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.note-card:not(.placeholder-card):hover::before {
-  opacity: 1;
-}
-
-.note-image {
-  width: 100%;
-  height: 80px;
-  object-fit: cover;
-  margin-bottom: 10px;
-  border-radius: 4px;
-  transition: transform 0.3s ease;
-}
-
-.note-card:hover .note-image {
+.note-card:hover img {
   transform: scale(1.05);
 }
 
-.creator-info {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-  padding: 5px 10px;
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 15px;
-  transition: background 0.3s ease;
-}
-
-.note-card:hover .creator-info {
-  background: rgba(0, 0, 0, 0.04);
-}
-
 .creator-avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  margin-right: 10px;
-  border: 2px solid #fff;
+  object-fit: cover;
+  border: 2px solid white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .placeholder-card {
-  background-color: #f9f9f9;
-  border: 1px dashed #e0e0e0;
+  background-color: #f9fafb;
+  border: 2px dashed #e5e7eb;
   opacity: 0.6;
-  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .placeholder-card:hover {
-  opacity: 0.8;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  padding: 10px 0;
+  transform: none;
+  box-shadow: none;
 }
 
 :deep(.el-pagination) {
@@ -238,5 +195,86 @@ export default {
 
 :deep(.el-pagination .el-input__inner) {
   text-align: center;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 3rem;
+}
+
+.image-container {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+}
+
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 66.67%;
+  overflow: hidden;
+}
+
+.note-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.5s ease;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 60%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.note-card:hover .note-image {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.note-card:hover .image-overlay {
+  opacity: 1;
+}
+
+.placeholder-card .image-container {
+  background: linear-gradient(110deg, #eff1f3 8%, #e2e4e7 18%, #eff1f3 33%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .image-wrapper {
+    padding-top: 75%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .image-wrapper {
+    padding-top: 56.25%;
+  }
 }
 </style>

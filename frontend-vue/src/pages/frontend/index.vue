@@ -2,8 +2,8 @@
     <nav class="bg-white border-gray-200 border-b dark:bg-gray-900">
         <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
             <a href="/" class="flex items-center">
-                <img src="https://flowbite.com/docs/images/logo.svg" class="h-8 mr-3" alt="Flowbite Logo" />
-                <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Momento</span>
+                <img :src="base2Logo" class="h-8 mr-3" alt="AirRowing Logo" />
+                <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">AirRowing</span>
             </a>
             <div class="flex items-center md:order-2">
                 <button type="button" data-collapse-toggle="navbar-search" aria-controls="navbar-search"
@@ -44,15 +44,14 @@
                     </svg>
                 </button>
             </div>
-    </div>
-</nav>
-
-
+        </div>
+    </nav>
 </template>
 
 <script setup>
 import { onMounted } from 'vue'
 import { initCollapses } from 'flowbite'
+import base2Logo from '../assets/base2.png'
 
 // 初始化 flowbit 相关组件
 onMounted(() => {
