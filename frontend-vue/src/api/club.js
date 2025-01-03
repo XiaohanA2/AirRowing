@@ -2,32 +2,92 @@ import axios from "@/axios";
 
 // 俱乐部基础操作
 export function createClubService(params) {
-    return axios.post("/club/create", params)
-        .then(response => response.data)
+    console.log('Creating club with params:', params);
+    return axios.post("/club/club/create", params)
+        .then(response => {
+            console.log('Create club response:', response);
+            return response;
+        })
         .catch(error => {
             console.error("Error creating club:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }
 
 export function updateClubService(params) {
-    return axios.post("/club/update", params);
+    console.log('Updating club with params:', params);
+    return axios.post("/club/club/update", params)
+        .then(response => {
+            console.log('Update club response:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error("Error updating club:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
+            throw error;
+        });
 }
 
 export function deleteClubService(params) {
-    return axios.post("/club/delete", params);
+    console.log('Deleting club with params:', params);
+    return axios.post("/club/club/delete", params)
+        .then(response => {
+            console.log('Delete club response:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error("Error deleting club:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
+            throw error;
+        });
 }
 
 export function getClubDetailsService(params) {
-    return axios.post("/club/details", params);
+    console.log('Requesting club details with params:', params);
+    return axios.post("/club/club/details", params)
+        .then(response => {
+            console.log('Club details response:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error("Error fetching club details:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
+            throw error;
+        });
 }
 
 // 获取俱乐部列表
 export function getClubListService(params) {
-    return axios.post("/club/clublist", params)
-        .then(response => response.data)
+    console.log('Requesting club list with params:', params);
+    return axios.post("/club/club/clublist", params)
+        .then(response => {
+            console.log('Club list response:', response);
+            return response;
+        })
         .catch(error => {
             console.error("Error fetching club list:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }
@@ -46,33 +106,93 @@ export function getHostListService(params) {
 }
 
 export function getClubMembersService(params) {
-    return axios.post("/club/members", params);
+    console.log('Fetching club members with params:', params);
+    return axios.post("/club/club/members", params)
+        .then(response => {
+            console.log('Club members response:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error("Error fetching club members:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
+            throw error;
+        });
 }
 
 export function removeMemberService(params) {
-    return axios.post("/club/clubRemoveMember", params);
+    console.log('Removing club member with params:', params);
+    return axios.post("/club/club/clubRemoveMember", params)
+        .then(response => {
+            console.log('Remove member response:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error("Error removing member:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
+            throw error;
+        });
 }
 
 // 加入申请相关
 export function joinClubService(params) {
-    return axios.post("/club/joinRequest", params)
-        .then(response => response.data)
+    console.log('Submitting join request with params:', params);
+    return axios.post("/club/club/joinRequest", params)
+        .then(response => {
+            console.log('Join request response:', response);
+            return response;
+        })
         .catch(error => {
-            console.error("Error joining club:", error);
+            console.error("Error submitting join request:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }
 
 export function reviewJoinRequestService(params) {
-    return axios.post("/club/reviewJoinRequest", params);
+    console.log('Reviewing join request with params:', params);
+    return axios.post("/club/club/reviewJoinRequest", params)
+        .then(response => {
+            console.log('Review join request response:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error("Error reviewing join request:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
+            throw error;
+        });
 }
 
 // 退出俱乐部
 export function leaveClubService(params) {
-    return axios.post("/club/leave", params)
-        .then(response => response.data)
+    console.log('Leaving club with params:', params);
+    return axios.post("/club/club/leave", params)
+        .then(response => {
+            console.log('Leave club response:', response);
+            return response;
+        })
         .catch(error => {
             console.error("Error leaving club:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }
@@ -88,20 +208,38 @@ export function getJoinRequestListService(params) {
 }
 
 export function getClubJoinRequestsService(params) {
-    return axios.post("/club/clubJoinRequests", params)
-        .then(response => response.data)
+    console.log('Fetching club join requests with params:', params);
+    return axios.post("/club/club/clubJoinRequests", params)
+        .then(response => {
+            console.log('Club join requests response:', response);
+            return response;
+        })
         .catch(error => {
             console.error("Error fetching club join requests:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }
 
 // 活动相关
 export function publishActivityService(params) {
-    return axios.post("/club/publishActivity", params)
-        .then(response => response.data)
+    console.log('Publishing activity with params:', params);
+    return axios.post("/club/club/publishActivity", params)
+        .then(response => {
+            console.log('Publish activity response:', response);
+            return response;
+        })
         .catch(error => {
             console.error("Error publishing activity:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }
@@ -115,14 +253,37 @@ export function deleteActivityService(params) {
 }
 
 export function getActivityDetailsService(params) {
-    return axios.post("/club/activity/details", params);
+    console.log('Fetching activity details with params:', params);
+    return axios.post("/club/club/activity/details", params)
+        .then(response => {
+            console.log('Activity details response:', response);
+            return response;
+        })
+        .catch(error => {
+            console.error("Error fetching activity details:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
+            throw error;
+        });
 }
 
 export function getClubActivityListService(params) {
-    return axios.post("/club/activityList", params)
-        .then(response => response.data)
+    console.log('Fetching activity list with params:', params);
+    return axios.post("/club/club/activityList", params)
+        .then(response => {
+            console.log('Activity list response:', response);
+            return response;
+        })
         .catch(error => {
             console.error("Error fetching activity list:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }

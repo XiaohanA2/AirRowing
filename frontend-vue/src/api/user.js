@@ -50,10 +50,19 @@ export function unfollowUserApi(followUserId) {
 
 // 根据用户ID查询用户信息
 export function getUserInfoByIdService(params) {
+    console.log('Requesting user info with params:', params);
     return axios.post("/user/user/findById", params)
-        .then(response => response.data)
+        .then(response => {
+            console.log('User info response:', response);
+            return response;
+        })
         .catch(error => {
             console.error("Error fetching user info:", error);
+            console.error("Error details:", {
+                status: error?.response?.status,
+                data: error?.response?.data,
+                config: error?.config
+            });
             throw error;
         });
 }

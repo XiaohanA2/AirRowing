@@ -74,19 +74,7 @@ const menus = [
     {
         'name': '俱乐部',
         'icon': 'House',
-        'path': '/main/club',
-        'children': [
-            {
-                'name': '俱乐部列表',
-                'icon': 'List',
-                'path': '/main/club/list'
-            },
-            {
-                'name': '我的俱乐部',
-                'icon': 'Star',
-                'path': '/main/club/my'
-            }
-        ]
+        'path': '/main/club/list',
     },
     {
         'name': '赛艇社区',
