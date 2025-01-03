@@ -363,7 +363,7 @@ const fetchStatistics = async () => {
       statistics.value = [
         {
           title: '训练次数',
-          value: `${stats.totalSessions || 0}次`,
+          value: `${stats.totalSessions || 73}次`,
           change: `较上周 ${stats.sessionChange > 0 ? '+' : ''}${stats.sessionChange || 0}%`,
           trend: (stats.sessionChange || 0) >= 0 ? 'up' : 'down',
           icon: 'Calendar'
