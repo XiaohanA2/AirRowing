@@ -40,7 +40,7 @@ export function getNoteCommentsService(params) {
     return axios.post('/note/comment/list', params);
 }
 
-// 查���评论的回复
+// 查看评论的回复
 export function getCommentRepliesService(params) {
     return axios.post('/note/comment/replies', params);
 }

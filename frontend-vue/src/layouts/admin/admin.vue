@@ -1,44 +1,34 @@
 <template>
-    <!-- 外层容器 -->
-    <el-container>
-    
-        <!-- 左边侧边栏 -->
-        <el-aside :width='menuStore.menuWidth' class="transition-all duration-300">
-            <AdminMenu></AdminMenu>
-        </el-aside>
-        
-        <!-- 右边主内容区域 -->
-        <el-container>
-            <!-- 顶栏容器 -->
-            <el-header>
-                <AdminHeader></AdminHeader>
-            </el-header>
+    <div class="min-h-screen">
+        <div class="wrapper" :class="{ 'menu-collapsed': isCollapse }">
+            <!-- 左侧菜单 -->
+            <AdminMenu />
             
-            <el-main>
+            <!-- 右侧内容 -->
+            <div class="content-container">
+                <!-- 头部导航 -->
+                <AdminHeader />
+                
                 <!-- 标签导航栏 -->
-                <AdminTagList></AdminTagList>
-
-                <!-- 主内容（根据路由动态展示不同页面） -->
-                <router-view v-slot="{ Component }">
-                    <Transition name="fade">
-                        <!-- max 指定最多缓存 10 个组件 -->
-                        <KeepAlive :max="10">
-                            <component :is="Component"></component>
-                        </KeepAlive>
-                    </Transition>
-                    
-                </router-view>
-            </el-main>
-            
-            <!-- 底栏容器 -->
-            <el-footer>
-                <AdminFooter></AdminFooter>
-            </el-footer>
-        </el-container>
-    </el-container>
+                <div class="tag-list-container fixed left-0 right-0 z-40" 
+                     :style="{ top: '64px', marginLeft: menuStore.menuWidth }">
+                    <AdminTagList />
+                </div>
+                
+                <!-- 内容主体 -->
+                <div class="main-content">
+                    <router-view></router-view>
+                </div>
+                
+                <!-- 底部版权 -->
+                <AdminFooter />
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 // 引入组件
 import AdminFooter from './components/AdminFooter.vue';
 import AdminHeader from './components/AdminHeader.vue';
@@ -48,6 +38,7 @@ import AdminTagList from './components/AdminTagList.vue';
 import { useMenuStore } from '@/stores/menu'
 
 const menuStore = useMenuStore()
+const isCollapse = computed(() => menuStore.menuWidth === '64px')
 </script>
 
 <style scoped>
@@ -90,5 +81,38 @@ const menuStore = useMenuStore()
 .fade-enter-active {
     transition: all 0.3s;
     transition-delay: 0.3s;
+}
+
+.wrapper {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.content-container {
+    position: relative;
+    margin-left: 250px;
+    transition: all 0.3s ease;
+    padding-top: 110px;
+}
+
+.menu-collapsed .content-container {
+    margin-left: 64px;
+}
+
+.main-content {
+    min-height: calc(100vh - 110px);
+    padding: 0 20px;
+}
+
+.tag-list-container {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    height: 44px;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.menu-collapsed .tag-list-container {
+    left: 64px;
 }
 </style>

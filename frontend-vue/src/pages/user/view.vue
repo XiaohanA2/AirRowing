@@ -18,7 +18,6 @@
             <el-tag type="info">关注 {{ userStats.followingTotal }}</el-tag>
             <el-tag type="primary">笔记 {{ userStats.noteTotal }}</el-tag>
             <el-tag type="danger">点赞 {{ userStats.likeTotal }}</el-tag>
-            <el-tag>收藏 {{ userStats.collectTotal }}</el-tag>
           </div>
           <el-button type="primary" size="small" @click="toggleFollow" v-if="!isSelf">
             {{ isFollowing ? '取消关注' : '关注' }}

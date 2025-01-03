@@ -1,6 +1,6 @@
 <template>
     <!-- 设置背景色为白色、高度为 64px，padding-right 为 4， border-bottom 为 slate 100 -->
-    <div class="bg-white h-[64px] flex pr-4 border-b border-slate-100">
+    <div class="header-container">
         <!-- 左边栏收缩、展开 -->
         <div class="w-[42px] h-[64px] cursor-pointer flex items-center justify-center text-gray-700 hover:bg-gray-200"
             @click="handleMenuWidth">
@@ -192,3 +192,23 @@ const onSubmit = () => {
 }
 
 </script>
+
+<style scoped>
+.header-container {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 250px;
+    height: 64px;
+    background-color: white;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    padding-right: 1rem;
+    z-index: 40;
+    transition: all 0.3s ease;
+}
+
+.menu-collapsed .header-container {
+    left: 64px;
+}
+</style>

@@ -1,6 +1,7 @@
 <template>
     <!-- 左边：标签导航栏 -->
-    <div class="fixed top-[64px] h-[44px] px-2 right-0 z-50 flex items-center bg-white transition-all duration-300 shadow" :style="{left: menuStore.menuWidth}">
+    <div class="fixed top-[64px] h-[44px] px-2 right-0 z-40 flex items-center bg-white transition-all duration-300 shadow" 
+         :style="{left: menuStore.menuWidth, borderBottom: '1px solid #e5e7eb'}">
         <el-tabs v-model="activeTab" type="card" class="demo-tabs" @tab-remove="removeTab" @tab-change="tabChange" style="min-width: 10px;">
             <el-tab-pane v-for="item in tabList" :key="item.path" :label="item.title" :name="item.path" :closable="item.path != '/admin/index'">
             </el-tab-pane>
@@ -23,7 +24,6 @@
             </el-dropdown>
         </span>
     </div>
-    <div class="h-[44px]"></div>
 </template>
 
 <script setup>
@@ -32,7 +32,7 @@ import { useTabList } from '@/composables/useTagList.js'
 const { menuStore, activeTab, tabList, tabChange, removeTab, handleCloseTab } = useTabList()
 </script>
 
-<style>
+<style scoped>
 .el-tabs__item {
     font-size: 12px;
     border: 1px solid #d8dce5!important;
@@ -62,6 +62,7 @@ const { menuStore, activeTab, tabList, tabChange, removeTab, handleCloseTab } = 
 
 .el-tabs {
     height: 32px;
+    margin-top: 38px;
 }
 
 .el-tabs__header {
@@ -91,5 +92,4 @@ const { menuStore, activeTab, tabList, tabChange, removeTab, handleCloseTab } = 
     cursor: not-allowed;
     color: #d1d5db;
 }
-
 </style>

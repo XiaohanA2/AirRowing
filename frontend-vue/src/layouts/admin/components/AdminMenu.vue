@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-slate-800 h-screen text-white menu-container transition-all duration-300"
+    <div class="menu-container"
         :style="{ width: menuStore.menuWidth }">
         <!-- 顶部 Logo, 指定高度为 64px, 和右边的 Header 头保持一样高 -->
         <div class="flex items-center justify-center h-[64px]">
@@ -11,18 +11,35 @@
         <el-menu :default-active="defaultActive" @select="handleSelect" :collapse="isCollapse"
             :collapse-transition="false">
             <template v-for="(item, index) in menus" :key="index">
-                <el-menu-item :index="item.path">
-                    <el-icon>
-                        <!-- 动态图标 -->
-                        <component :is="item.icon"></component>
-                    </el-icon>
-                    <span>{{ item.name }}</span>
-                </el-menu-item>
+                <!-- 处理有子菜单的情况 -->
+                <template v-if="item.children">
+                    <el-sub-menu :index="item.path">
+                        <template #title>
+                            <el-icon>
+                                <component :is="item.icon"></component>
+                            </el-icon>
+                            <span>{{ item.name }}</span>
+                        </template>
+                        <el-menu-item v-for="(child, childIndex) in item.children" 
+                            :key="childIndex" 
+                            :index="child.path">
+                            <el-icon>
+                                <component :is="child.icon"></component>
+                            </el-icon>
+                            <span>{{ child.name }}</span>
+                        </el-menu-item>
+                    </el-sub-menu>
+                </template>
+                <!-- 处理没有子菜单的情况 -->
+                <template v-else>
+                    <el-menu-item :index="item.path">
+                        <el-icon>
+                            <component :is="item.icon"></component>
+                        </el-icon>
+                        <span>{{ item.name }}</span>
+                    </el-menu-item>
+                </template>
             </template>
-            <el-menu-item index="/admin/training-analysis">
-                <el-icon><DataAnalysis /></el-icon>
-                <span>训练分析</span>
-            </el-menu-item>
         </el-menu>
     </div>
 </template>
@@ -51,39 +68,63 @@ const handleSelect = (path) => {
 const menus = [
     {
         'name': '首页',
-        'icon': 'Monitor',
-        'path': '/admin/index'
+        'icon': 'HomeFilled',
+        'path': '/main/welcome'
     },
     {
-        'name': '我的笔记',
-        'icon': 'Document',
-        'path': '/admin/article/list',
+        'name': '俱乐部',
+        'icon': 'House',
+        'path': '/main/club',
+        'children': [
+            {
+                'name': '俱乐部列表',
+                'icon': 'List',
+                'path': '/main/club/list'
+            },
+            {
+                'name': '我的俱乐部',
+                'icon': 'Star',
+                'path': '/main/club/my'
+            }
+        ]
     },
     {
-        'name': '关注粉丝',
-        'icon': 'FolderOpened',
-        'path': '/admin/category/list',
+        'name': '赛艇社区',
+        'icon': 'Service',
+        'path': '/main/community',
+        'children': [
+            {
+                'name': '社区首页',
+                'icon': 'Monitor',
+                'path': '/main/community/home',
+            },
+            {
+                'name': '我的笔记',
+                'icon': 'Document',
+                'path': '/main/note/list',
+            },
+            {
+                'name': '关注粉丝',
+                'icon': 'FolderOpened',
+                'path': '/main/community/follow',
+            },
+            {
+                'name': '我的点赞',
+                'icon': 'Star',
+                'path': '/main/community/like',
+            },
+        ]
     },
     {
-        'name': '我的收藏',
-        'icon': 'PriceTag',
-        'path': '/admin/tag/list',
-    },
-    {
-        'name': '我的点赞',
-        'icon': 'PriceTag',
-        'path': '/admin/like/list',
+        'name': '训练分析',
+        'icon': 'DataAnalysis',
+        'path': '/main/training/analysis'
     },
     {
         'name': '个人信息',
         'icon': 'Setting',
-        'path': '/admin/blog/setting',
-    },
-    // {
-    //     'name': '笔记详情',
-    //     'icon': 'FolderOpened',
-    //     'path': '/admin/note/detail/:id/:userId',
-    // },
+        'path': '/main/user/profile',
+    }
 ]
 </script>
 
@@ -123,5 +164,38 @@ const menus = [
 
 .el-menu-item:hover {
     background-color: #ffffff10;
+}
+
+/* 添加子菜单样式 */
+.el-sub-menu .el-menu-item {
+    background-color: rgb(15, 23, 42) !important;
+}
+
+.el-sub-menu .el-menu-item:hover {
+    background-color: #ffffff15 !important;
+}
+
+.el-sub-menu .el-menu-item.is-active {
+    background-color: #409eff15 !important;
+}
+
+/* 添加滚动控制 */
+.menu-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background-color: rgb(30 41 59);
+    color: white;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* 隐藏滚动条 */
+.menu-container::-webkit-scrollbar {
+    display: none;
 }
 </style>
