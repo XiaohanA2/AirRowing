@@ -16,7 +16,8 @@
                     <el-sub-menu :index="item.path">
                         <template #title>
                             <el-icon>
-                                <component :is="item.icon"></component>
+                                <component v-if="!item.isCustomIcon" :is="item.icon"></component>
+                                <img v-else :src="item.icon" class="menu-icon">
                             </el-icon>
                             <span>{{ item.name }}</span>
                         </template>
@@ -24,7 +25,8 @@
                             :key="childIndex" 
                             :index="child.path">
                             <el-icon>
-                                <component :is="child.icon"></component>
+                                <component v-if="!child.isCustomIcon" :is="child.icon"></component>
+                                <img v-else :src="child.icon" class="menu-icon">
                             </el-icon>
                             <span>{{ child.name }}</span>
                         </el-menu-item>
@@ -34,7 +36,8 @@
                 <template v-else>
                     <el-menu-item :index="item.path">
                         <el-icon>
-                            <component :is="item.icon"></component>
+                            <component v-if="!item.isCustomIcon" :is="item.icon"></component>
+                            <img v-else :src="item.icon" class="menu-icon">
                         </el-icon>
                         <span>{{ item.name }}</span>
                     </el-menu-item>
@@ -69,26 +72,31 @@ const menus = [
     {
         'name': '首页',
         'icon': 'HomeFilled',
+        'isCustomIcon': false,
         'path': '/main/welcome'
     },
     {
         'name': '俱乐部',
-        'icon': 'House',
+        'icon': new URL('@/assets/icons/club.png', import.meta.url).href,
+        'isCustomIcon': true,
         'path': '/main/club/list',
     },
     {
         'name': '赛艇社区',
-        'icon': 'Service',
+        'icon': new URL('@/assets/icons/community.png', import.meta.url).href,
+        'isCustomIcon': true,
         'path': '/main/community',
         'children': [
             {
                 'name': '社区首页',
-                'icon': 'Monitor',
+                'icon': new URL('@/assets/icons/monitor.png', import.meta.url).href,
+                'isCustomIcon': true,
                 'path': '/main/community/home',
             },
             {
                 'name': '我的主页',
                 'icon': 'User',
+                'isCustomIcon': false,
                 'path': '/main/note/list',
             },
         ]
@@ -96,11 +104,13 @@ const menus = [
     {
         'name': '训练分析',
         'icon': 'DataAnalysis',
+        'isCustomIcon': false,
         'path': '/main/training/analysis'
     },
     {
         'name': '个人信息',
-        'icon': 'Setting',
+        'icon': 'setting',
+        'isCustomIcon': false,
         'path': '/main/user/profile',
     }
 ]
@@ -175,5 +185,17 @@ const menus = [
 /* 隐藏滚动条 */
 .menu-container::-webkit-scrollbar {
     display: none;
+}
+
+/* 添加菜单图标样式 */
+.menu-icon {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+}
+
+/* 确保折叠时图标居中 */
+.el-menu--collapse .menu-icon {
+    margin-right: 0;
 }
 </style>
