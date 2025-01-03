@@ -30,7 +30,7 @@ instance.interceptors.request.use(function (config) {
 // 添加响应拦截器
 instance.interceptors.response.use(
     function (response) {
-        // 直接返回响应数据
+        // 返回完整的响应数据
         return response.data
     },
     function (error) {

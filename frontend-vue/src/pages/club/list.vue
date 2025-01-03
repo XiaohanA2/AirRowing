@@ -1,10 +1,30 @@
 <template>
   <div class="club-list">
-    <div class="header">
-      <el-button type="primary" @click="showCreateDialog">创建俱乐部</el-button>
+    <div class="page-header">
+      <div class="header-left">
+        <h2 class="page-title">俱乐部</h2>
+        <div class="search-container">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索俱乐部名称或描述"
+            clearable
+            class="search-input"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+      </div>
+      <div class="header-right">
+        <el-button type="primary" @click="showCreateDialog">
+          <el-icon><Plus /></el-icon>
+          创建俱乐部
+        </el-button>
+      </div>
     </div>
-    
-    <el-table :data="clubList" v-loading="loading">
+
+    <el-table :data="filteredClubs" v-loading="loading">
       <el-table-column prop="name" label="俱乐部名称" />
       <el-table-column prop="description" label="描述" />
       <el-table-column prop="createTime" label="创建时间" />
@@ -42,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
   createClubService, 
@@ -64,17 +84,39 @@ const createForm = ref({
   description: ''
 })
 
+const searchQuery = ref('')
+
+const filteredClubs = computed(() => {
+  if (!searchQuery.value) {
+    return clubList.value
+  }
+  const query = searchQuery.value.toLowerCase()
+  return clubList.value.filter(club => 
+    club.name.toLowerCase().includes(query) ||
+    club.description.toLowerCase().includes(query)
+  )
+})
+
 const loadClubs = async () => {
   loading.value = true
   try {
+    console.log('Loading clubs with page:', page.value, 'size:', size.value);
     const res = await getClubListService({
       page: page.value,
       size: size.value
     })
-    clubList.value = res.data?.clubs || []
-    total.value = res.data?.total || 0
+    console.log('Response from server:', res);
+    if (res.success) {
+      clubList.value = res.data?.clubs || []
+      total.value = parseInt(res.data?.total || '0')
+      page.value = res.data?.currentPage || 1
+      size.value = res.data?.pageSize || 10
+    } else {
+      ElMessage.error(res.message || '获取俱乐部列表失败')
+    }
   } catch (error) {
-    ElMessage.error('获取俱乐部列表失败')
+    console.error('完整错误信息:', error);
+    ElMessage.error(error.response?.data?.message || '获取俱乐部列表失败')
   } finally {
     loading.value = false
   }
@@ -82,22 +124,37 @@ const loadClubs = async () => {
 
 const handleCreate = async () => {
   try {
-    await createClubService(createForm.value)
-    ElMessage.success('创建成功')
-    createDialogVisible.value = false
-    createForm.value = { name: '', description: '' }  // 清空表单
-    loadClubs()  // 重新加载列表
+    if (!createForm.value.name.trim()) {
+      ElMessage.warning('俱乐部名称不能为空')
+      return
+    }
+    
+    const res = await createClubService(createForm.value)
+    if (res.success) {
+      ElMessage.success('创建成功')
+      createDialogVisible.value = false
+      createForm.value = { name: '', description: '' }  // 清空表单
+      loadClubs()  // 重新加载列表
+    } else {
+      ElMessage.error(res.message || '创建失败')
+    }
   } catch (error) {
+    console.error('创建俱乐部出错:', error)
     ElMessage.error('创建失败')
   }
 }
 
 const handleJoin = async (clubId) => {
   try {
-    await joinClubService({ clubId })
-    ElMessage.success('申请已提交')
+    const res = await joinClubService({ clubId })
+    if (res.success) {
+      ElMessage.success(res.data || '申请已提交')
+    } else {
+      ElMessage.error(res.message || '申请失败')
+    }
   } catch (error) {
-    ElMessage.error('申请失败')
+    console.error('申请加入俱乐部出错:', error)
+    ElMessage.error(error.response?.data?.message || '申请失败')
   }
 }
 
@@ -117,15 +174,130 @@ onMounted(() => {
 
 <style scoped>
 .club-list {
-  padding: 20px;
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 64px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
 }
 
-.header {
-  margin-bottom: 20px;
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 20px 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-.el-pagination {
-  margin-top: 20px;
-  justify-content: flex-end;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.search-container {
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-input {
+  --el-input-hover-border-color: #409EFF;
+  --el-input-focus-border-color: #409EFF;
+}
+
+:deep(.el-input__wrapper) {
+  padding: 4px 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #f5f7fa;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  background: #ffffff;
+}
+
+:deep(.el-input__inner) {
+  height: 36px;
+  font-size: 14px;
+}
+
+:deep(.el-input__prefix) {
+  color: #909399;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-right .el-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.club-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .header-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .search-container {
+    max-width: 100%;
+  }
+
+  .header-right {
+    justify-content: flex-end;
+  }
+
+  .club-list {
+    padding: 16px;
+  }
+
+  .search-container {
+    margin-bottom: 16px;
+  }
+
+  .club-grid {
+    gap: 16px;
+  }
 }
 </style> 
