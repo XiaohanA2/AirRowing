@@ -1,5 +1,4 @@
 <template>
-  <div class="note-container">
     <el-card class="note-display-area" shadow="hover">
       <div class="note-cards">
         <el-row :gutter="20" justify="center">
@@ -34,7 +33,6 @@
         />
       </div>
     </el-card>
-  </div>
 </template>
 
 <script>
@@ -117,13 +115,6 @@ export default {
 </script>
 
 <style scoped>
-.note-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 73vh;
-  overflow: hidden;
-}
 
 .note-display-area {
   width: 100%;

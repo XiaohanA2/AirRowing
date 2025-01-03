@@ -35,16 +35,123 @@
               <div class="card-header">
                 <span>训练趋势分析</span>
                 <div class="chart-controls">
-                  <el-radio-group v-model="chartTimeRange" size="small">
-                    <el-radio-button label="week">周</el-radio-button>
-                    <el-radio-button label="month">月</el-radio-button>
-                    <el-radio-button label="year">年</el-radio-button>
-                  </el-radio-group>
+                  <el-select 
+                    v-model="trendTrainingType" 
+                    placeholder="选择训练类型"
+                    style="width: 120px; margin-right: 10px"
+                    @change="handleTrendFilterChange"
+                  >
+                    <el-option label="赛艇训练" value="赛艇训练" />
+                    <el-option label="力量训练" value="力量训练" />
+                    <el-option label="有氧训练" value="有氧训练" />
+                  </el-select>
+                  <el-date-picker
+                    v-model="trendDateRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    format="YYYY-MM-DD"
+                    value-format="YYYY-MM-DD"
+                    style="width: 240px;"
+                    @change="handleTrendFilterChange"
+                  />
                 </div>
               </div>
             </template>
             <div class="chart-container">
-              <!-- 这里放置图表组件 -->
+              <div class="trend-statistics">
+                <el-row :gutter="20">
+                  <el-col :span="8">
+                    <div class="stat-item">
+                      <div class="stat-label">平均训练时长</div>
+                      <div class="stat-value">{{ formatDuration(trendStats.avgDuration || 0) }}</div>
+                    </div>
+                  </el-col>
+                  <el-col :span="8">
+                    <div class="stat-item">
+                      <div class="stat-label">平均训练距离</div>
+                      <div class="stat-value">{{ (trendStats.avgDistance || 0).toFixed(2) }} km</div>
+                    </div>
+                  </el-col>
+                  <el-col :span="8">
+                    <div class="stat-item">
+                      <div class="stat-label">平均消耗卡路里</div>
+                      <div class="stat-value">{{ (trendStats.avgCalories || 0).toFixed(2) }} kcal</div>
+                    </div>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20" style="margin-top: 20px;">
+                  <el-col :span="8">
+                    <div class="stat-item">
+                      <div class="stat-label">总训练时长</div>
+                      <div class="stat-value">{{ formatDuration(trendStats.totalDuration || 0) }}</div>
+                    </div>
+                  </el-col>
+                  <el-col :span="8">
+                    <div class="stat-item">
+                      <div class="stat-label">总训练距离</div>
+                      <div class="stat-value">{{ (trendStats.totalDistance || 0).toFixed(2) }} km</div>
+                    </div>
+                  </el-col>
+                  <el-col :span="8">
+                    <div class="stat-item">
+                      <div class="stat-label">总消耗卡路里</div>
+                      <div class="stat-value">{{ (trendStats.totalCalories || 0).toFixed(2) }} kcal</div>
+                    </div>
+                  </el-col>
+                </el-row>
+              </div>
+
+              <!-- 添加图表展示区域 -->
+              <div class="charts-section">
+                <!-- 训练强度分布图 -->
+                <el-row :gutter="20" style="margin-top: 30px;">
+                  <el-col :span="12">
+                    <div class="chart-wrapper">
+                      <div class="chart-title">训练强度分布</div>
+                      <div class="chart-subtitle">基于训练时长和距离的分析</div>
+                      <div ref="intensityChartRef" style="height: 300px;"></div>
+                    </div>
+                  </el-col>
+                  <el-col :span="12">
+                    <div class="chart-wrapper">
+                      <div class="chart-title">训练进展趋势</div>
+                      <div class="chart-subtitle">距离和配速的变化趋势</div>
+                      <div ref="progressChartRef" style="height: 300px;"></div>
+                    </div>
+                  </el-col>
+                </el-row>
+
+                <!-- 训练时间分布和目标完成度 -->
+                <el-row :gutter="20" style="margin-top: 20px;">
+                  <el-col :span="12">
+                    <div class="chart-wrapper">
+                      <div class="chart-title">训练时间分布</div>
+                      <div class="chart-subtitle">不同时段的训练频率</div>
+                      <div ref="timeDistributionChartRef" style="height: 300px;"></div>
+                    </div>
+                  </el-col>
+                  <el-col :span="12">
+                    <div class="chart-wrapper">
+                      <div class="chart-title">目标完成度</div>
+                      <div class="chart-subtitle">与设定目标的对比</div>
+                      <div ref="goalCompletionChartRef" style="height: 300px;"></div>
+                    </div>
+                  </el-col>
+                </el-row>
+
+                <!-- 训练数据对比 -->
+                <el-row :gutter="20" style="margin-top: 20px;">
+                  <el-col :span="24">
+                    <div class="chart-wrapper">
+                      <div class="chart-title">训练数据周期对比</div>
+                      <div class="chart-subtitle">本周期与上个周期的训练数据对比</div>
+                      <div ref="comparisonChartRef" style="height: 300px;"></div>
+                    </div>
+                  </el-col>
+                </el-row>
+              </div>
             </div>
           </el-card>
 
@@ -53,18 +160,36 @@
               <div class="card-header">
                 <span>训练记录</span>
                 <div class="header-controls">
+                  <el-date-picker
+                    v-model="startDate"
+                    type="date"
+                    placeholder="开始日期"
+                    format="YYYY-MM-DD"
+                    value-format="YYYY-MM-DD"
+                    :disabled-date="disableStartDate"
+                    style="margin-right: 10px; width: 160px"
+                    @change="handleDateChange"
+                  />
+                  <el-date-picker
+                    v-model="endDate"
+                    type="date"
+                    placeholder="结束日期"
+                    format="YYYY-MM-DD"
+                    value-format="YYYY-MM-DD"
+                    :disabled-date="disableEndDate"
+                    style="margin-right: 10px; width: 160px"
+                    @change="handleDateChange"
+                  />
                   <el-select 
                     v-model="currentTrainingType" 
                     placeholder="选择训练类型"
                     style="margin-right: 10px"
-                    @change="refreshHistory"
+                    @change="handleTrainingTypeChange"
                   >
                     <el-option label="全部类型" value="all" />
-                    <el-option label="赛艇训练" value="rowing" />
-                    <el-option label="游泳训练" value="swimming" />
-                    <el-option label="跑步训练" value="running" />
-                    <el-option label="力量训练" value="strength" />
-                    <el-option label="有氧训练" value="cardio" />
+                    <el-option label="赛艇训练" value="赛艇训练" />
+                    <el-option label="力量训练" value="力量训练" />
+                    <el-option label="有氧训练" value="有氧训练" />
                   </el-select>
                   <el-button type="primary" @click="showUploadDialog">
                     上传训练
@@ -75,36 +200,34 @@
                 </div>
               </div>
             </template>
-            <el-table :data="trainingHistory" style="width: 100%">
+            <el-table :data="trainingHistory" style="width: 100%" v-loading="loading">
               <el-table-column prop="trainingDate" label="日期" width="180">
                 <template #default="scope">
                   {{ formatDate(scope.row.trainingDate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="duration" label="时长(分钟)" width="120" />
+              <el-table-column prop="duration" label="时长" width="120">
+                <template #default="scope">
+                  {{ formatDuration(scope.row.duration) }}
+                </template>
+              </el-table-column>
               <el-table-column prop="distance" label="距离(km)" width="120">
                 <template #default="scope">
-                  {{ scope.row.distance?.toFixed(2) }}
+                  {{ (scope.row.distance || 0).toFixed(2) }}
                 </template>
               </el-table-column>
               <el-table-column prop="calories" label="卡路里" width="120">
                 <template #default="scope">
-                  {{ scope.row.calories?.toFixed(1) }}
+                  {{ (scope.row.calories || 0).toFixed(2) }}
                 </template>
               </el-table-column>
               <el-table-column prop="type" label="训练类型" width="120">
                 <template #default="scope">
-                  {{ getTrainingTypeName(scope.row.type) }}
+                  {{ scope.row.type }}
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="220">
+              <el-table-column label="操作" width="100">
                 <template #default="scope">
-                  <el-button size="small" @click="showTrainingDetail(scope.row)">
-                    详情
-                  </el-button>
-                  <el-button size="small" type="primary" @click="handleEditTraining(scope.row)">
-                    编辑
-                  </el-button>
                   <el-button size="small" type="danger" @click="handleDeleteTraining(scope.row.id)">
                     删除
                   </el-button>
@@ -189,9 +312,9 @@
       >
         <el-form-item label="训练类型" prop="type">
           <el-select v-model="uploadForm.type" placeholder="请选择训练类型">
-            <el-option label="赛艇训练" value="rowing" />
-            <el-option label="力量训练" value="strength" />
-            <el-option label="有氧训练" value="cardio" />
+            <el-option label="赛艇训练" value="赛艇训练" />
+            <el-option label="力量训练" value="力量训练" />
+            <el-option label="有氧训练" value="有氧训练" />
           </el-select>
         </el-form-item>
         <el-form-item label="训练日期" prop="trainingDate">
@@ -224,13 +347,6 @@
       </template>
     </el-dialog>
 
-    <!-- 训练详情弹窗 -->
-    <el-dialog v-model="detailDialogVisible" title="训练详情" width="80%">
-      <div class="training-detail">
-        <!-- 训练详情内容 -->
-      </div>
-    </el-dialog>
-
     <!-- 添加分页组件 -->
     <div class="pagination-container">
       <el-pagination
@@ -245,8 +361,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { ElMessageBox } from 'element-plus/es'
+import 'element-plus/es/components/base/style/css'
+import 'element-plus/es/components/message-box/style/css'
 import { useUserStore } from '@/stores/user'
 import { 
     submitTrainingRecord, 
@@ -257,6 +376,28 @@ import {
 } from '@/api/training_record'
 import axios from 'axios'
 import { PictureRounded, Plus } from '@element-plus/icons-vue'
+import * as echarts from 'echarts/core'
+import { PieChart, LineChart, BarChart, RadarChart } from 'echarts/charts'
+import {
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+
+// 注册必需的组件
+echarts.use([
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent,
+  PieChart,
+  LineChart,
+  BarChart,
+  RadarChart,
+  CanvasRenderer
+])
 
 // 获取用户状态
 const userStore = useUserStore()
@@ -264,7 +405,7 @@ const userStore = useUserStore()
 // 训练历史记录
 const trainingHistory = ref([])
 const uploadForm = ref({
-  type: 'rowing',
+  type: '赛艇训练',
   trainingDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
   duration: 30,
   distance: 5.0,
@@ -279,7 +420,6 @@ const isLoading = ref(false)
 // 新增的状态变量
 const uploadDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
-const chartTimeRange = ref('week')
 const statistics = ref([])
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -287,21 +427,68 @@ const totalRecords = ref(0)
 const selectedTraining = ref(null)
 const formRef = ref(null)
 const currentTrainingType = ref('all')  // 默认显示所有类型
+const startDate = ref(null)
+const endDate = ref(null)
+const loading = ref(false)
+
+// 添加趋势统计数据
+const trendStats = ref({})
+
+// 添加趋势分析筛选相关的响应式变量
+const trendTrainingType = ref('赛艇训练') // 默认选择赛艇训练
+const trendDateRange = ref(null)
+
+// 添加图表引用
+const intensityChartRef = ref(null)
+const progressChartRef = ref(null)
+const timeDistributionChartRef = ref(null)
+const goalCompletionChartRef = ref(null)
+const comparisonChartRef = ref(null)
+
+// 图表实例
+let intensityChart = null
+let progressChart = null
+let timeDistributionChart = null
+let goalCompletionChart = null
+let comparisonChart = null
+
+// 添加日期验证和处理函数
+const disableStartDate = (time) => {
+  if (endDate.value) {
+    return time.getTime() > new Date(endDate.value).getTime()
+  }
+  return false
+}
+
+const disableEndDate = (time) => {
+  if (startDate.value) {
+    return time.getTime() < new Date(startDate.value).getTime()
+  }
+  return false
+}
+
+const handleDateChange = () => {
+  // 验证日期是否有效
+  if (startDate.value && endDate.value) {
+    const start = new Date(startDate.value).getTime()
+    const end = new Date(endDate.value).getTime()
+    
+    if (start > end) {
+      ElMessage.warning('开始日期不能大于结束日期')
+      return
+    }
+  }
+  
+  refreshHistory()
+}
 
 // 获取统计数据
 const fetchStatistics = async () => {
   try {
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - 7) // 获取最近7天的数据
-    
     const queryParams = {
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0]
-    }
-
-    // 只有当选择了特定类型时才添加 type 参数
-    if (currentTrainingType.value !== 'all') {
-      queryParams.type = currentTrainingType.value
+      type: currentTrainingType.value === 'all' ? undefined : currentTrainingType.value,
+      startDate: startDate.value || undefined,
+      endDate: endDate.value || undefined
     }
     
     const res = await getTrainingStatistics(queryParams)
@@ -310,21 +497,21 @@ const fetchStatistics = async () => {
       const stats = res.data
       statistics.value = [
         {
-          title: '本周训练次数',
+          title: '训练次数',
           value: `${stats.totalSessions || 0}次`,
           change: `较上周 ${stats.sessionChange > 0 ? '+' : ''}${stats.sessionChange || 0}%`,
           trend: (stats.sessionChange || 0) >= 0 ? 'up' : 'down',
           icon: 'Calendar'
         },
         {
-          title: '总训练时长',
+          title: '训练时长',
           value: `${Math.floor((stats.totalDuration || 0) / 60)}小时${(stats.totalDuration || 0) % 60}分`,
           change: `较上周 ${stats.durationChange > 0 ? '+' : ''}${stats.durationChange || 0}%`,
           trend: (stats.durationChange || 0) >= 0 ? 'up' : 'down',
           icon: 'Timer'
         },
         {
-          title: '总训练距离',
+          title: '训练距离',
           value: `${(stats.totalDistance || 0).toFixed(1)}km`,
           change: `较上周 ${stats.distanceChange > 0 ? '+' : ''}${stats.distanceChange || 0}%`,
           trend: (stats.distanceChange || 0) >= 0 ? 'up' : 'down',
@@ -347,53 +534,69 @@ const fetchStatistics = async () => {
 
 // 获取训练历史记录
 const refreshHistory = async () => {
+  loading.value = true
   try {
     const queryParams = {
       page: currentPage.value,
       size: pageSize.value,
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0]
-    }
-    
-    // 只有当选择了特定类型时才添加 type 参数
-    if (currentTrainingType.value !== 'all') {
-      queryParams.type = currentTrainingType.value
+      type: currentTrainingType.value === 'all' ? undefined : currentTrainingType.value,
+      startDate: startDate.value || undefined,
+      endDate: endDate.value || undefined
     }
 
+    console.log('Sending query params:', queryParams)
+
     const res = await queryTrainingRecords(queryParams)
+    console.log('Query response:', res)
     
-    if (res.success && res.data) {
-      const list = res.data.list || []
-      trainingHistory.value = list.map(record => ({
-        ...record,
-        trainingDate: record.trainingDate || new Date().toISOString(),
-        duration: Number(record.duration) || 0,
-        distance: Number(record.distance) || 0,
-        calories: Number(record.calories) || 0
-      }))
-      totalRecords.value = res.data.total || list.length
+    if (res && res.data) {
+      console.log('Processing training data:', res.data)
+      // 将数据按时间倒序排列
+      const sortedList = [...res.data.list].sort((a, b) => {
+        return new Date(b.trainingDate) - new Date(a.trainingDate)
+      })
       
-      // 如果没有数据，显示提示
-      if (list.length === 0) {
+      trainingHistory.value = sortedList.map(record => {
+        console.log('Processing record:', record)
+        return {
+          id: record.id,
+          trainingDate: record.trainingDate,
+          duration: Number(record.duration || 0),
+          distance: Number(record.distance || 0),
+          calories: Number(record.calories || 0),
+          type: record.type || '未知类型'
+        }
+      })
+      
+      totalRecords.value = Number(res.data.total || 0)
+      pageSize.value = Number(res.data.size || 10)
+      currentPage.value = Number(res.data.page || 1)
+      
+      console.log('Processed training history:', trainingHistory.value)
+      
+      if (trainingHistory.value.length === 0) {
         ElMessage.info('暂无训练记录')
       }
     } else {
+      console.warn('Invalid response format:', res)
       trainingHistory.value = []
       totalRecords.value = 0
-      ElMessage.warning(res.message || '暂无训练记录')
+      ElMessage.warning('获取训练记录失败')
     }
   } catch (error) {
     console.error('获取历史记录失败:', error)
     ElMessage.error(error.message || '获取历史记录失败')
     trainingHistory.value = []
     totalRecords.value = 0
+  } finally {
+    loading.value = false
   }
 }
 
 // 处理分页变化
-const handlePageChange = (page) => {
+const handlePageChange = async (page) => {
   currentPage.value = page
-  refreshHistory()
+  await refreshHistory()
 }
 
 // 提交训练记录
@@ -423,7 +626,7 @@ const handleSubmitTraining = async () => {
       uploadDialogVisible.value = false
       // 重置表单
       uploadForm.value = {
-        type: 'rowing',
+        type: '赛艇训练',
         trainingDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
         duration: 30,
         distance: 5.0,
@@ -541,15 +744,7 @@ const refreshAnalysis = async () => {
 
 // 添加训练类型名称映射函数
 const getTrainingTypeName = (type) => {
-  const typeMap = {
-    'rowing': '赛艇',
-    'swimming': '游泳',
-    'running': '跑步',
-    'cycling': '骑行',
-    'strength': '力量',
-    'cardio': '有氧'
-  }
-  return typeMap[type] || type
+  return type || '未知类型'
 }
 
 // 修改日期格式化函数
@@ -565,7 +760,7 @@ const formatDate = (dateString) => {
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
-    })
+    }).replace(/\//g, '-')
   } catch (error) {
     console.error('日期格式化错误:', error)
     return dateString
@@ -574,37 +769,6 @@ const formatDate = (dateString) => {
 
 // 显示上传对话框
 const showUploadDialog = () => {
-  uploadDialogVisible.value = true
-}
-
-// 显示训练详情
-const showTrainingDetail = (training) => {
-  detailDialogVisible.value = true
-  // 加载训练详情数据
-}
-
-// 分析特定训练
-const analyzeTraining = (training) => {
-  // 实现训练分析逻辑
-}
-
-// 修改训练记录
-const handleEditTraining = (training) => {
-  selectedTraining.value = { ...training }
-  uploadForm.value = {
-    type: training.type || 'rowing',
-    // 确保日期格式正确
-    trainingDate: training.trainingDate 
-      ? new Date(training.trainingDate).toISOString().slice(0, 19).replace('T', ' ')
-      : new Date().toISOString().slice(0, 19).replace('T', ' '),
-    duration: training.duration || 30,
-    distance: training.distance || 5.0,
-    calories: training.calories || null
-  }
-  // 重置表单验证状态
-  nextTick(() => {
-    formRef.value?.clearValidate()
-  })
   uploadDialogVisible.value = true
 }
 
@@ -617,13 +781,12 @@ const handleDeleteTraining = async (id) => {
       cancelButtonText: '取消'
     })
     
+    loading.value = true
     const res = await deleteTrainingRecord(id)
-    if (!res) {
-      throw new Error('服务器响应为空')
-    }
-
+    
     if (res.success) {
-      ElMessage.success('删除成功')
+      ElMessage.success(res.data || '删除成功')
+      // 刷新数据
       await refreshHistory()
       await fetchStatistics()
     } else {
@@ -632,8 +795,10 @@ const handleDeleteTraining = async (id) => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除训练记录失败:', error)
-      ElMessage.error(error.message || '删除失败')
+      ElMessage.error(typeof error === 'string' ? error : error.message || '删除失败')
     }
+  } finally {
+    loading.value = false
   }
 }
 
@@ -706,17 +871,369 @@ const handleUpload = async (file) => {
   return false // 阻止默认上传行为
 }
 
-onMounted(() => {
-  refreshHistory()
-  refreshAnalysis()
-  // 添加初始AI欢迎消息
-  chatMessages.value = [
-    {
-      content: "你好！我是你的AI训练助手。我可以帮你分析训练数据，提供专业建议。有什么我可以帮你的吗？",
-      type: "ai",
-      time: new Date().toLocaleTimeString()
+// 处理趋势分析筛选条件变化
+const handleTrendFilterChange = async () => {
+  try {
+    const params = {
+      type: trendTrainingType.value,
+      startDate: trendDateRange.value ? trendDateRange.value[0] : undefined,
+      endDate: trendDateRange.value ? trendDateRange.value[1] : undefined
     }
-  ]
+
+    console.log('Fetching trend stats with params:', params)
+    
+    const res = await getTrainingStatistics(params)
+    console.log('Trend stats response:', res)
+
+    if (res && res.success) {
+      console.log('Setting trend stats:', res.data)
+      trendStats.value = res.data || getDefaultTrendStats()
+      // 更新图表
+      initCharts()
+    } else {
+      console.warn('Invalid trend stats response:', res)
+      trendStats.value = getDefaultTrendStats()
+      if (!res.success) {
+        throw new Error(res.message || '获取统计数据失败')
+      }
+    }
+  } catch (error) {
+    console.error('获取趋势统计数据失败:', error)
+    ElMessage.error(error.message || '获取趋势统计数据失败')
+    trendStats.value = getDefaultTrendStats()
+  }
+}
+
+// 获取默认的趋势统计数据
+const getDefaultTrendStats = () => ({
+  totalDuration: 0,
+  avgDistance: 0,
+  minDuration: 0,
+  minDistance: 0,
+  maxDistance: 0,
+  avgCalories: 0,
+  totalCalories: 0,
+  totalDistance: 0,
+  maxDuration: 0,
+  avgDuration: 0
+})
+
+// 初始化训练强度分布图
+const initIntensityChart = (data) => {
+  if (!intensityChartRef.value) return
+  
+  intensityChart = echarts.init(intensityChartRef.value)
+  const option = {
+    title: {
+      text: '训练强度分布',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item'
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left'
+    },
+    series: [
+      {
+        name: '训练强度',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: '20',
+            fontWeight: 'bold'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: [
+          { value: data.lowIntensity || 20, name: '低强度' },
+          { value: data.mediumIntensity || 40, name: '中等强度' },
+          { value: data.highIntensity || 30, name: '高强度' }
+        ]
+      }
+    ]
+  }
+  intensityChart.setOption(option)
+}
+
+// 初始化训练进展趋势图
+const initProgressChart = (data) => {
+  if (!progressChartRef.value) return
+  
+  progressChart = echarts.init(progressChartRef.value)
+  const option = {
+    title: {
+      text: '训练进展趋势',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'cross',
+        label: {
+          backgroundColor: '#6a7985'
+        }
+      }
+    },
+    legend: {
+      data: ['训练距离', '平均配速'],
+      top: 30
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: [
+      {
+        type: 'category',
+        boundaryGap: false,
+        data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+      }
+    ],
+    yAxis: [
+      {
+        type: 'value',
+        name: '距离(km)',
+        position: 'left'
+      },
+      {
+        type: 'value',
+        name: '配速(min/500m)',
+        position: 'right'
+      }
+    ],
+    series: [
+      {
+        name: '训练距离',
+        type: 'line',
+        smooth: true,
+        data: [5, 7, 6, 8, 9, 7, 8]
+      },
+      {
+        name: '平均配速',
+        type: 'line',
+        yAxisIndex: 1,
+        smooth: true,
+        data: [2.5, 2.4, 2.3, 2.4, 2.2, 2.3, 2.1]
+      }
+    ]
+  }
+  progressChart.setOption(option)
+}
+
+// 初始化训练时间分布图
+const initTimeDistributionChart = (data) => {
+  if (!timeDistributionChartRef.value) return
+  
+  timeDistributionChart = echarts.init(timeDistributionChartRef.value)
+  const option = {
+    title: {
+      text: '训练时间分布',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: ['6-9点', '9-12点', '12-15点', '15-18点', '18-21点', '21-24点']
+    },
+    yAxis: {
+      type: 'value',
+      name: '训练次数'
+    },
+    series: [
+      {
+        name: '训练频次',
+        type: 'bar',
+        barWidth: '60%',
+        data: [2, 4, 3, 5, 6, 2]
+      }
+    ]
+  }
+  timeDistributionChart.setOption(option)
+}
+
+// 初始化目标完成度图
+const initGoalCompletionChart = (data) => {
+  if (!goalCompletionChartRef.value) return
+  
+  goalCompletionChart = echarts.init(goalCompletionChartRef.value)
+  const option = {
+    title: {
+      text: '目标完成度',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    radar: {
+      indicator: [
+        { name: '训练时长', max: 100 },
+        { name: '训练距离', max: 100 },
+        { name: '训练频次', max: 100 },
+        { name: '平均配速', max: 100 },
+        { name: '卡路里消耗', max: 100 }
+      ]
+    },
+    series: [
+      {
+        type: 'radar',
+        data: [
+          {
+            value: [80, 85, 70, 90, 75],
+            name: '目标完成度',
+            areaStyle: {
+              color: 'rgba(64,158,255,0.3)'
+            }
+          }
+        ]
+      }
+    ]
+  }
+  goalCompletionChart.setOption(option)
+}
+
+// 初始化训练数据对比图
+const initComparisonChart = (data) => {
+  if (!comparisonChartRef.value) return
+  
+  comparisonChart = echarts.init(comparisonChartRef.value)
+  const option = {
+    title: {
+      text: '训练数据周期对比',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['本周期', '上个周期'],
+      top: 30
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: ['训练时长', '训练距离', '消耗卡路里', '平均配速', '训练次数']
+    },
+    yAxis: {
+      type: 'value',
+      name: '完成百分比'
+    },
+    series: [
+      {
+        name: '本周期',
+        type: 'bar',
+        data: [120, 110, 105, 95, 115]
+      },
+      {
+        name: '上个周期',
+        type: 'bar',
+        data: [100, 100, 100, 100, 100]
+      }
+    ]
+  }
+  comparisonChart.setOption(option)
+}
+
+// 初始化所有图表
+const initCharts = () => {
+  nextTick(() => {
+    initIntensityChart(trendStats.value)
+    initProgressChart(trendStats.value)
+    initTimeDistributionChart(trendStats.value)
+    initGoalCompletionChart(trendStats.value)
+    initComparisonChart(trendStats.value)
+  })
+}
+
+// 监听窗口大小变化，重绘图表
+window.addEventListener('resize', () => {
+  intensityChart?.resize()
+  progressChart?.resize()
+  timeDistributionChart?.resize()
+  goalCompletionChart?.resize()
+  comparisonChart?.resize()
+})
+
+// 在组件卸载时销毁图表实例
+onUnmounted(() => {
+  intensityChart?.dispose()
+  progressChart?.dispose()
+  timeDistributionChart?.dispose()
+  goalCompletionChart?.dispose()
+  comparisonChart?.dispose()
+})
+
+// 修改表格列的显示
+const formatDuration = (minutes) => {
+  if (!minutes) return '0分钟'
+  // 将分钟数四舍五入到两位小数
+  minutes = Number(minutes.toFixed(2))
+  const hours = Math.floor(minutes / 60)
+  const remainingMinutes = (minutes % 60).toFixed(2)
+  return hours > 0 ? `${hours}小时${remainingMinutes}分钟` : `${remainingMinutes}分钟`
+}
+
+// 修改页面初始化逻辑
+onMounted(async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      refreshHistory(),
+      fetchStatistics(),
+      handleTrendFilterChange()
+    ])
+    // 添加初始AI欢迎消息
+    chatMessages.value = [
+      {
+        content: "你好！我是你的AI训练助手。我可以帮你分析训练数据，提供专业建议。有什么我可以帮你的吗？",
+        type: "ai",
+        time: new Date().toLocaleTimeString()
+      }
+    ]
+    // 初始化图表
+    initCharts()
+  } catch (error) {
+    console.error('初始化失败:', error)
+    ElMessage.error('数据加载失败，请刷新页面重试')
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 
@@ -903,5 +1420,65 @@ onMounted(() => {
 
 .media-content {
   margin-bottom: 8px;
+}
+
+.trend-statistics {
+  padding: 20px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #409EFF;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.charts-section {
+  margin-top: 30px;
+}
+
+.chart-wrapper {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+}
+
+.chart-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.chart-subtitle {
+  font-size: 12px;
+  color: #909399;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* 确保图表容器有足够的高度 */
+.chart-container {
+  min-height: 1000px;
 }
 </style>

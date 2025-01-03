@@ -63,41 +63,34 @@ export function submitTrainingRecord(data) {
  * @returns {Promise} 返回训练记录列表和分页信息
  */
 export function queryTrainingRecords(params) {
-    // 格式化日期参数
-    const queryParams = {
-        ...params,
-        startDate: params.startDate ? params.startDate.split('T')[0] : undefined,
-        endDate: params.endDate ? params.endDate.split('T')[0] : undefined
-    }
+    // 构建查询参数，移除所有 undefined 和 null 值
+    const queryParams = Object.entries({
+        page: params.page || 1,
+        size: params.size || 10,
+        type: params.type,
+        startDate: params.startDate,
+        endDate: params.endDate
+    }).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null) {
+            acc[key] = value
+        }
+        return acc
+    }, {})
+
+    console.log('Query params:', queryParams)
 
     return axios.post("/club/training-data/query", queryParams)
         .then(response => {
-            if (!response || !response.data) {
+            console.log('Server response:', response)
+            if (!response) {
                 throw new Error('服务器响应为空')
             }
-
-            // 如果响应是对象且包含success字段，返回整个响应
-            if (typeof response.data === 'object' && 'success' in response.data) {
-                return response.data
-            }
-            
-            // 如果响应直接是数据数组，包装成标准响应格式
-            return {
-                success: true,
-                data: {
-                    list: Array.isArray(response.data) ? response.data : [],
-                    total: Array.isArray(response.data) ? response.data.length : 0
-                },
-                message: '查询成功'
-            }
+            // 直接返回响应数据，因为axios拦截器已经处理了data字段
+            return response
         })
         .catch(error => {
             console.error("Error querying training records:", error)
-            if (error.response) {
-                const { data, status } = error.response
-                throw new Error(data?.message || `查询失败(${status})`)
-            }
-            throw new Error('查询失败')
+            throw error.response?.data?.message || error.message || '查询失败'
         })
 }
 
@@ -153,15 +146,23 @@ export function updateTrainingRecord(data) {
 /**
  * 删除训练记录
  * @param {string|number} id 训练记录ID
- * @returns {Promise}
+ * @returns {Promise} 返回删除操作的结果
  */
 export function deleteTrainingRecord(id) {
     return axios.post("/club/training-data/delete", { id })
-        .then(response => response.data)
+        .then(response => {
+            if (!response) {
+                throw new Error('服务器响应为空')
+            }
+            if (!response.success) {
+                throw new Error(response.message || '删除失败')
+            }
+            return response
+        })
         .catch(error => {
-            console.error("Error deleting training record:", error);
-            throw error;
-        });
+            console.error("Error deleting training record:", error)
+            throw error.response?.data?.message || error.message || '删除失败'
+        })
 }
 
 /**
@@ -173,19 +174,32 @@ export function deleteTrainingRecord(id) {
  * @returns {Promise} 返回统计数据
  */
 export function getTrainingStatistics(params) {
-    if (params.startDate) {
-        params.startDate = params.startDate.split('T')[0]
-    }
-    if (params.endDate) {
-        params.endDate = params.endDate.split('T')[0]
-    }
+    // 构建查询参数，移除所有 undefined 和 null 值
+    const queryParams = Object.entries({
+        type: params.type,
+        startDate: params.startDate,
+        endDate: params.endDate
+    }).reduce((acc, [key, value]) => {
+        if (value !== undefined && value !== null) {
+            acc[key] = value
+        }
+        return acc
+    }, {})
 
-    return axios.post("/club/training-data/statistics", params)
-        .then(response => response.data)
+    console.log('Statistics query params:', queryParams)
+
+    return axios.post("/club/training-data/statistics", queryParams)
+        .then(response => {
+            console.log('Statistics response:', response)
+            if (!response) {
+                throw new Error('服务器响应为空')
+            }
+            return response
+        })
         .catch(error => {
-            console.error("Error getting training statistics:", error);
-            throw error;
-        });
+            console.error("Error getting training statistics:", error)
+            throw error.response?.data?.message || error.message || '获取统计数据失败'
+        })
 }
 
 /**

@@ -1,9 +1,3 @@
-<!-- <template>
-    <div>
-        我的点赞
-    </div>
-</template>
- -->
 <template>
     <el-card class="page-container">
         <div class="scroll-content" @scroll="handleScroll">

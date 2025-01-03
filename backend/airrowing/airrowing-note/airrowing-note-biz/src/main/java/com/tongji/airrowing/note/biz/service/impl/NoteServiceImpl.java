@@ -291,7 +291,7 @@ public class NoteServiceImpl implements NoteService {
         // 并发查询优化
         // RPC: 调用用户服务
         CompletableFuture<FindUserByIdRspDTO> userResultFuture = CompletableFuture
-                .supplyAsync(() -> userRpcService.findById(userId), threadPoolTaskExecutor);
+                .supplyAsync(() -> userRpcService.findById(noteDO.getCreatorId()), threadPoolTaskExecutor);
 
         // RPC: 调用 K-V 存储服务获取内容
         CompletableFuture<String> contentResultFuture = CompletableFuture.completedFuture(null);
@@ -314,7 +314,7 @@ public class NoteServiceImpl implements NoteService {
                     String imgUrisStr = noteDO.getImgUris();
                     // 图文笔记图片链接(集合)
                     List<String> imgUris = null;
-                    // 如果查询的是图文笔记，需要将图片链接的逗号分隔开，转换成集合
+                    // 如果查询的是图文笔记，需���将图片链接的逗号分隔开，转换成集合
                     if (Objects.equals(noteType, NoteTypeEnum.IMAGE_TEXT.getCode())
                             && StringUtils.isNotBlank(imgUrisStr)) {
                         imgUris = List.of(imgUrisStr.split(","));
@@ -329,7 +329,7 @@ public class NoteServiceImpl implements NoteService {
                             .imgUris(imgUris)
                             .topicId(noteDO.getTopicId())
                             .topicName(noteDO.getTopicName())
-                            .creatorId(userId)
+                            .creatorId(noteDO.getCreatorId())
                             .creatorName(findUserByIdRspDTO.getNickName())
                             .avatar(findUserByIdRspDTO.getAvatar())
                             .videoUri(noteDO.getVideoUri())
@@ -342,7 +342,7 @@ public class NoteServiceImpl implements NoteService {
         // 获取拼装后的 FindNoteDetailRspVO
         FindNoteDetailRspVO findNoteDetailRspVO = resultFuture.get();
 
-        // 异步线程中将笔记详情存入 Redis
+        // ���步线程中将笔记详情存入 Redis
         threadPoolTaskExecutor.submit(() -> {
             String noteDetailJson1 = JsonUtils.toJsonString(findNoteDetailRspVO);
             // 过期时间（保底1天 + 随机秒数，将缓存过期时间打散，防止同一时间大量缓存失效，导致数据库压力太大）
@@ -533,7 +533,7 @@ public class NoteServiceImpl implements NoteService {
         Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(noteOperateMqDTO))
                 .build();
 
-        // 通过冒号连接, 可让 MQ 发送给主题 Topic 时，携带上标签 Tag
+        // 通过冒号连接, 可让 MQ 发送给主题 Topic 时，��带上标签 Tag
         String destination = MQConstants.AIR_TOPIC_NOTE_OPERATE + ":" + MQConstants.AIR_TAG_NOTE_DELETE;
 
         // 异步发送 MQ 消息，提升接口响应速度
@@ -840,7 +840,7 @@ public class NoteServiceImpl implements NoteService {
                 // 从数据库中校验笔记是否被点赞
                 int count = noteLikeDOMapper.selectCountByUserIdAndNoteId(userId, noteId);
 
-                // 未点赞，无法取消点赞操作，抛出业务异常
+                // 未点赞，无法���消点赞操作，抛出业务异常
                 if (count == 0) throw new BizException(ResponseCodeEnum.NOTE_NOT_LIKED);
             }
             // 布隆过滤器校验目标笔记未被点赞（判断绝对正确）
@@ -867,7 +867,7 @@ public class NoteServiceImpl implements NoteService {
         Message<String> message = MessageBuilder.withPayload(JsonUtils.toJsonString(likeUnlikeNoteMqDTO))
                 .build();
 
-        // 通过冒号连接, 可让 MQ 发送给主题 Topic 时，携带上标签 Tag
+        // 通过冒号连接, 可让 MQ ���送给主题 Topic 时，携带上标签 Tag
         String destination = MQConstants.AIR_TOPIC_LIKE_OR_UNLIKE + ":" + MQConstants.AIR_TAG_UNLIKE;
 
         String hashKey = String.valueOf(userId);
@@ -1006,7 +1006,7 @@ public class NoteServiceImpl implements NoteService {
         }
 
         // 4. 发送 MQ, 将收藏数据落库
-        // 构建消息体 DTO
+        // 构建��息体 DTO
         CollectUnCollectNoteMqDTO collectUnCollectNoteMqDTO = CollectUnCollectNoteMqDTO.builder()
                 .userId(userId)
                 .noteId(noteId)
@@ -1345,7 +1345,7 @@ public class NoteServiceImpl implements NoteService {
     /**
      * 校验笔记的可见性
      * @param visible 是否可见
-     * @param currUserId 当前用户 ID
+     * @param currUserId ��前用户 ID
      * @param creatorId 笔记创建者
      */
     private void checkNoteVisible(Integer visible, Long currUserId, Long creatorId) {

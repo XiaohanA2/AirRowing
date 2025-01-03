@@ -797,7 +797,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 73vh;
+  height: 100%;
   width: 100%;
   /* 占满窗口高度 */
   overflow: hidden;
