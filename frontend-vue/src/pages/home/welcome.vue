@@ -5,7 +5,7 @@
             <div class="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-transparent z-10"></div>
             <div class="parallax-bg" 
                  :style="{ transform: `translateY(${scrollY * 0.5}px)` }">
-                <img src="@/assets/images/rowing-banner.jpg" alt="Rowing" class="w-full h-[700px] object-cover">
+                <img src="@/assets/images/rowing-banner.png" alt="Rowing" class="w-full h-[700px] object-cover">
             </div>
             <div class="absolute top-1/2 left-20 transform -translate-y-1/2 z-20 text-white"
                  :style="{ transform: `translate3d(0, ${-scrollY * 0.2}px, 0)` }">
@@ -111,7 +111,6 @@ import {
 } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import CountUp from 'vue-countup-v3'
-import { useMotion } from '@vueuse/motion'
 
 const router = useRouter()
 const scrollY = ref(0)
@@ -174,7 +173,7 @@ const latestNews = ref([
 
 const stats = [
     { 
-        value: 5000, 
+        value: 1000, 
         suffix: '+', 
         label: '活跃用户',
         icon: User

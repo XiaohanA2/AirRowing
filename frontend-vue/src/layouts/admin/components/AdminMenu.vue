@@ -3,8 +3,8 @@
         :style="{ width: menuStore.menuWidth }">
         <!-- 顶部 Logo, 指定高度为 64px, 和右边的 Header 头保持一样高 -->
         <div class="flex items-center justify-center h-[64px]">
-            <img v-if="menuStore.menuWidth == '250px'" src="@/assets/weblog-logo.png" class="h-[60px]">
-            <img v-else src="@/assets/weblog-logo-mini.png" class="h-[60px]">
+            <img v-if="menuStore.menuWidth == '250px'" src="@/assets/base.png" class="h-[60px]">
+            <img v-else src="@/assets/base.png" class="h-[60px]">
         </div>
 
         <!-- 下方菜单 -->
