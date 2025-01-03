@@ -1,11 +1,12 @@
 <template>
     <div class="grid grid-cols-2 h-screen">
-        <div class="col-span-2 order-2 p-10 md:col-span-1 md:order-1 bg-slate-900">
-            <div
-                class="flex justify-center items-center h-full flex-col animate__animated animate__bounceInLeft animate__fast">
-                <h2 class="font-bold text-4xl mb-7 text-white">Airrownig</h2>
-                <p class="text-white">一款赛艇运动训练与互动平台</p>
-                <img src="@/assets/ins.png" class="w-1/2">
+        <div class="col-span-2 order-2 md:col-span-1 md:order-1 bg-slate-900 relative overflow-hidden">
+            <div class="absolute inset-0">
+                <img src="@/assets/ins.png" class="w-full h-full object-cover opacity-60" alt="background">
+            </div>
+            <div class="relative h-full flex flex-col justify-center items-center p-10 animate__animated animate__bounceInLeft animate__fast">
+                <h2 class="font-bold text-5xl mb-4 text-white">AirRowing</h2>
+                <p class="text-white text-xl mb-8">一款专注赛艇运动的训练与社交平台</p>
             </div>
         </div>
         <div class="col-span-2 order-1 md:col-span-1 md:order-2 bg-white">
@@ -194,3 +195,46 @@ onBeforeUnmount(() => {
 
 
 </script>
+
+<style scoped>
+/* 优化背景图片效果 */
+.bg-slate-900 {
+    position: relative;
+    background: linear-gradient(to right, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.7));
+}
+
+.bg-slate-900::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg,
+        rgba(15, 23, 42, 0.9) 0%,
+        rgba(15, 23, 42, 0.6) 100%
+    );
+    z-index: 1;
+}
+
+.relative {
+    z-index: 2;
+}
+
+/* 图片动画效果 */
+.object-cover {
+    transition: transform 0.3s ease;
+}
+
+.bg-slate-900:hover .object-cover {
+    transform: scale(1.05);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .bg-slate-900 {
+        min-height: 300px;
+    }
+}
+</style>
