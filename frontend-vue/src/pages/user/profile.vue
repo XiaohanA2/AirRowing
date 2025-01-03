@@ -1,66 +1,83 @@
 <template>
   <div class="user-profile-container">
     <div class="user-profile">
-      <!-- 添加背景图片展示 -->
-      <div class="profile-header" :style="{ backgroundImage: `url(${userInfo.backgrounding})` }">
+      <!-- 优化背景图片展示区域 -->
+      <div class="profile-header" :style="{ backgroundImage: `url(${userInfo.backgrounding || defaultBg})` }">
         <div class="profile-header__overlay">
-          <img :src="userInfo.avatar" alt="用户头像" class="profile-header__avatar" />
-          <h1 class="profile-header__name">{{ userInfo.nickname }}</h1>
+          <div class="profile-header__content">
+            <img :src="userInfo.avatar || defaultAvatar" alt="用户头像" class="profile-header__avatar" />
+            <div class="profile-header__info">
+              <h1 class="profile-header__name">{{ userInfo.nickname }}</h1>
+              <p class="profile-header__id">@{{ userInfo.airrowingId || '未设置' }}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- 改进信息展示区域布局 -->
+      <!-- 优化信息展示区域布局 -->
       <div class="info-grid">
         <div class="info-card">
           <div class="info-card__header">
-            <i class="fas fa-user "></i>
+            <i class="fas fa-user"></i>
             <h3>基本信息</h3>
           </div>
           <div class="info-card__content">
-            <p><i class="fas fa-envelope  ">邮箱：</i> {{ userInfo.email }}</p>
-            <p><i class="fas fa-birthday-cake ">生日：</i> {{ formattedBirthday }}</p>
-            <p><i class="fas fa-venus-mars ">性别：</i> {{ gender }}</p>
-            <p><i class="fas fa-info-circle ">简介：</i> {{ userInfo.introduction || '这个人很懒，什么都没写~' }}</p>
+            <div class="info-item">
+              <i class="fas fa-envelope"></i>
+              <span class="info-label">邮箱</span>
+              <span class="info-value">{{ userInfo.email }}</span>
+            </div>
+            <div class="info-item">
+              <i class="fas fa-birthday-cake"></i>
+              <span class="info-label">生日</span>
+              <span class="info-value">{{ formattedBirthday }}</span>
+            </div>
+            <div class="info-item">
+              <i class="fas fa-venus-mars"></i>
+              <span class="info-label">性别</span>
+              <span class="info-value">{{ gender }}</span>
+            </div>
+            <div class="info-item">
+              <i class="fas fa-info-circle"></i>
+              <span class="info-label">简介</span>
+              <span class="info-value">{{ userInfo.introduction || '这个人很懒，什么都没写~' }}</span>
+            </div>
           </div>
         </div>
 
-        <div class="info-card">
+        <!-- 修改数据统计卡片 -->
+        <div class="info-card stats-card">
           <div class="info-card__header">
             <i class="fas fa-chart-bar"></i>
-            <h3>数据统计</h3>
+            <h3>个人数据</h3>
           </div>
-          <div class="info-card__stats">
-            <div class="stat-item">
-              <span class="stat-number">{{ userStats.fansTotal }}</span>
-              <span class="stat-label">粉丝</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ userStats.followingTotal }}</span>
-              <span class="stat-label">关注</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ userStats.noteTotal }}</span>
-              <span class="stat-label">笔记</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ userStats.likeTotal }}</span>
-              <span class="stat-label">获赞</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{{ userStats.collectTotal }}</span>
-              <span class="stat-label">收藏</span>
+          <div class="stats-grid">
+            <div class="stat-item" v-for="(value, key) in statsData" :key="key">
+              <div class="stat-icon">
+                <i :class="value.icon"></i>
+              </div>
+              <div class="stat-content">
+                <span class="stat-number">{{ calculateStat(key) }}</span>
+                <span class="stat-label">{{ value.label }}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 操作按钮改进 -->
+      <!-- 优化操作按钮 -->
       <div class="action-buttons">
         <button class="action-btn action-btn--primary" @click="openEditModal">
-          <i class="fas fa-edit"></i> 编辑资料
+          <i class="fas fa-edit"></i>
+          <span>编辑资料</span>
         </button>
         <button class="action-btn action-btn--secondary" @click="openChangePasswordModal">
-          <i class="fas fa-key"></i> 修改密码
+          <i class="fas fa-key"></i>
+          <span>修改密码</span>
+        </button>
+        <button class="action-btn action-btn--danger" @click="handleLogout">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>退出登录</span>
         </button>
       </div>
 
@@ -174,6 +191,9 @@ import axios from "axios";
 import { getToken } from "@/composables/cookie";
 import { sendVerificationCode, login } from '@/api/admin/user'; // 引入 login 方法
 import { ref, reactive, computed, onMounted } from 'vue';
+import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
+import { showMessage, showModel } from '@/composables/util'
 
 export default {
   setup() {
@@ -213,6 +233,9 @@ export default {
     const countdown = ref(0);
     const formRef = ref(null);
     const passwordVisible = ref(false);
+
+    const userStore = useUserStore()
+    const router = useRouter()
 
     // 计算属性：格式化生日
     const formattedBirthday = computed(() => {
@@ -478,11 +501,71 @@ export default {
       resetPasswordForm(); // 重置密码表单
     };
 
+    // 退出登录处理函数
+    const handleLogout = async () => {
+      const confirmed = await showModel('是否确认要退出登录？')
+      if (confirmed) {
+        const success = await userStore.logout()
+        if (success) {
+          showMessage('退出登录成功！')
+          router.push('/login')
+        }
+      }
+    }
+
     // 组件挂载时获取用户信息
     onMounted(() => {
       fetchUserInfo();
     });
 
+    // 在 setup 中添加默认图片和统计数据配置
+    const defaultAvatar = '/path/to/default-avatar.png';
+    const defaultBg = '/path/to/default-bg.jpg';
+
+    const statsData = {
+      rowingYears: {
+        label: '赛艇年数',
+        icon: 'fas fa-ship',
+        value: '3年'
+      },
+      memberDays: {
+        label: '加入天数',
+        icon: 'fas fa-calendar-alt',
+        value: '180天'
+      },
+      noteTotal: {
+        label: '发帖数',
+        icon: 'fas fa-file-alt',
+        // 不设置固定 value，使用 API 数据
+      },
+      likeTotal: {
+        label: '获赞数',
+        icon: 'fas fa-heart',
+        // 不设置固定 value，使用 API 数据
+      },
+      trainingHours: {
+        label: '训练时长',
+        icon: 'fas fa-stopwatch',
+        value: '256h'
+      },
+      level: {
+        label: '用户等级',
+        icon: 'fas fa-medal',
+        value: 'Lv.8'
+      }
+    };
+
+    // 修改计算方法，区分 API 数据和固定值
+    const calculateStat = (key) => {
+      // 如果是发帖数或获赞数，使用 API 数据
+      if (key === 'noteTotal' || key === 'likeTotal') {
+        return userStats[key] || '0';
+      }
+      // 其他统计项使用固定值
+      return statsData[key].value;
+    };
+
+    // 在 setup 中返回这些新增的数据
     return {
       userInfo,
       passwordData,
@@ -511,6 +594,11 @@ export default {
       userStats,
       fetchUserStats,
       passwordVisible,
+      defaultAvatar,
+      defaultBg,
+      statsData,
+      calculateStat,
+      handleLogout,
     };
   },
 };
@@ -520,29 +608,29 @@ export default {
 .user-profile-container {
   display: flex;
   justify-content: center;
-  height: 92%;
+  min-height: calc(100vh - 20px);
   padding: 20px;
   box-sizing: border-box;
   background-color: #f0f2f5;
-  overflow: hidden;
+  overflow-y: auto;
+  margin-top: 20px;
 }
 
 .user-profile {
   width: 100%;
-  height: 100%;
-  max-width: 100%;
+  max-width: 1200px;
   background: linear-gradient(120deg, #ffffff, #f8f9fa, #ffffff);
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  gap: 20px;
 }
 
 .profile-header {
-  height: 40%;
+  height: 300px;
+  min-height: 200px;
   background-size: cover;
   background-position: center;
   border-radius: 15px;
@@ -1238,5 +1326,193 @@ export default {
 
 .form__group :deep(.el-input__suffix) {
   padding-right: 12px;
+}
+
+/* 优化卡片样式 */
+.info-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease;
+}
+
+.info-item:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.info-item i {
+  color: #007bff;
+  width: 24px;
+  margin-right: 12px;
+}
+
+.info-label {
+  color: #6c757d;
+  width: 60px;
+  margin-right: 12px;
+  font-weight: 500;
+}
+
+.info-value {
+  color: #2c3e50;
+  flex: 1;
+}
+
+/* 优化统计卡片布局 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+  background: rgba(0, 123, 255, 0.03);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #007bff, #00d2ff);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  background: rgba(0, 123, 255, 0.08);
+}
+
+.stat-item:hover::before {
+  opacity: 1;
+}
+
+.stat-icon {
+  font-size: 24px;
+  color: #007bff;
+  margin-bottom: 8px;
+  transition: transform 0.3s ease;
+}
+
+.stat-item:hover .stat-icon {
+  transform: scale(1.1);
+}
+
+.stat-content {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+/* 优化头部信息区域 */
+.profile-header__content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.profile-header__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-header__id {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .info-label {
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+  
+  .stat-item {
+    padding: 12px;
+  }
+  
+  .stat-number {
+    font-size: 20px;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+  }
+}
+
+/* 添加退出登录按钮样式 */
+.action-btn--danger {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+  border: none;
+}
+
+.action-btn--danger:hover {
+  background: linear-gradient(135deg, #c82333, #bd2130);
+  transform: translateY(-2px);
+}
+
+/* 调整按钮间距 */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
 }
 </style>

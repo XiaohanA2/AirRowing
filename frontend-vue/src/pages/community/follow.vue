@@ -72,7 +72,7 @@
           <el-select v-model="sortBy" placeholder="排序方式" class="sort-select">
             <el-option label="最近关注" value="recent" />
             <el-option label="粉丝数量" value="fans" />
-            <el-option label="笔记数量" value="notes" />
+            <el-option label="帖子数量" value="notes" />
           </el-select>
         </div>
 
