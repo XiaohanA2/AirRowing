@@ -1,361 +1,225 @@
 <template>
-  <div class="common-container">
-    <!-- 顶部统计卡片 -->
-    <div class="statistics-cards">
-      <el-row :gutter="20">
-        <el-col :span="6" v-for="(stat, index) in statistics" :key="index">
-          <el-card shadow="hover" class="stat-card">
-            <template #header>
-              <div class="stat-header">
-                <el-icon>
-                  <component :is="stat.icon" />
-                </el-icon>
-                <span>{{ stat.title }}</span>
-              </div>
-            </template>
-            <div class="stat-value">{{ stat.value }}</div>
-            <div class="stat-change" :class="stat.trend">
-              {{ stat.change }}
+  <div class="dashboard-container">
+    <div class="content-wrapper">
+      <!-- 左侧主要内容区域 -->
+      <div class="main-panel">
+        <!-- 顶部统计卡片 -->
+        <div class="stats-row">
+          <div class="stat-card" v-for="(stat, index) in statistics" :key="index">
+            <div class="stat-icon">
               <el-icon>
-                <component :is="stat.trend === 'up' ? 'ArrowUp' : 'ArrowDown'" />
+                <component :is="stat.icon" />
               </el-icon>
             </div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </div>
-
-    <!-- 主要内容区域 -->
-    <div class="main-content">
-      <el-row :gutter="20">
-        <!-- 左侧训练历史和图表 -->
-        <el-col :span="16">
-          <el-card class="chart-card">
-            <template #header>
-              <div class="card-header">
-                <span>训练趋势分析</span>
-                <div class="chart-controls">
-                  <el-select 
-                    v-model="trendTrainingType" 
-                    placeholder="选择训练类型"
-                    style="width: 120px; margin-right: 10px"
-                    @change="handleTrendFilterChange"
-                  >
-                    <el-option label="赛艇训练" value="赛艇训练" />
-                    <el-option label="力量训练" value="力量训练" />
-                    <el-option label="有氧训练" value="有氧训练" />
-                  </el-select>
-                  <el-date-picker
-                    v-model="trendDateRange"
-                    type="daterange"
-                    range-separator="至"
-                    start-placeholder="开始日期"
-                    end-placeholder="结束日期"
-                    format="YYYY-MM-DD"
-                    value-format="YYYY-MM-DD"
-                    style="width: 240px;"
-                    @change="handleTrendFilterChange"
-                  />
-                </div>
-              </div>
-            </template>
-            <div class="chart-container">
-              <div class="trend-statistics">
-                <el-row :gutter="20">
-                  <el-col :span="8">
-                    <div class="stat-item">
-                      <div class="stat-label">平均训练时长</div>
-                      <div class="stat-value">{{ formatDuration(trendStats.avgDuration || 0) }}</div>
-                    </div>
-                  </el-col>
-                  <el-col :span="8">
-                    <div class="stat-item">
-                      <div class="stat-label">平均训练距离</div>
-                      <div class="stat-value">{{ (trendStats.avgDistance || 0).toFixed(2) }} km</div>
-                    </div>
-                  </el-col>
-                  <el-col :span="8">
-                    <div class="stat-item">
-                      <div class="stat-label">平均消耗卡路里</div>
-                      <div class="stat-value">{{ (trendStats.avgCalories || 0).toFixed(2) }} kcal</div>
-                    </div>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="20" style="margin-top: 20px;">
-                  <el-col :span="8">
-                    <div class="stat-item">
-                      <div class="stat-label">总训练时长</div>
-                      <div class="stat-value">{{ formatDuration(trendStats.totalDuration || 0) }}</div>
-                    </div>
-                  </el-col>
-                  <el-col :span="8">
-                    <div class="stat-item">
-                      <div class="stat-label">总训练距离</div>
-                      <div class="stat-value">{{ (trendStats.totalDistance || 0).toFixed(2) }} km</div>
-                    </div>
-                  </el-col>
-                  <el-col :span="8">
-                    <div class="stat-item">
-                      <div class="stat-label">总消耗卡路里</div>
-                      <div class="stat-value">{{ (trendStats.totalCalories || 0).toFixed(2) }} kcal</div>
-                    </div>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <!-- 添加图表展示区域 -->
-              <div class="charts-section">
-                <!-- 训练强度分布图 -->
-                <el-row :gutter="20" style="margin-top: 30px;">
-                  <el-col :span="12">
-                    <div class="chart-wrapper">
-                      <div class="chart-title">训练强度分布</div>
-                      <div class="chart-subtitle">基于训练时长和距离的分析</div>
-                      <div ref="intensityChartRef" style="height: 300px;"></div>
-                    </div>
-                  </el-col>
-                  <el-col :span="12">
-                    <div class="chart-wrapper">
-                      <div class="chart-title">训练进展趋势</div>
-                      <div class="chart-subtitle">距离和配速的变化趋势</div>
-                      <div ref="progressChartRef" style="height: 300px;"></div>
-                    </div>
-                  </el-col>
-                </el-row>
-
-                <!-- 训练时间分布和目标完成度 -->
-                <el-row :gutter="20" style="margin-top: 20px;">
-                  <el-col :span="12">
-                    <div class="chart-wrapper">
-                      <div class="chart-title">训练时间分布</div>
-                      <div class="chart-subtitle">不同时段的训练频率</div>
-                      <div ref="timeDistributionChartRef" style="height: 300px;"></div>
-                    </div>
-                  </el-col>
-                  <el-col :span="12">
-                    <div class="chart-wrapper">
-                      <div class="chart-title">目标完成度</div>
-                      <div class="chart-subtitle">与设定目标的对比</div>
-                      <div ref="goalCompletionChartRef" style="height: 300px;"></div>
-                    </div>
-                  </el-col>
-                </el-row>
-
-                <!-- 训练数据对比 -->
-                <el-row :gutter="20" style="margin-top: 20px;">
-                  <el-col :span="24">
-                    <div class="chart-wrapper">
-                      <div class="chart-title">训练数据周期对比</div>
-                      <div class="chart-subtitle">本周期与上个周期的训练数据对比</div>
-                      <div ref="comparisonChartRef" style="height: 300px;"></div>
-                    </div>
-                  </el-col>
-                </el-row>
+            <div class="stat-content">
+              <div class="stat-title">{{ stat.title }}</div>
+              <div class="stat-value">{{ stat.value }}</div>
+              <div class="stat-change" :class="stat.trend">
+                {{ stat.change }}
+                <el-icon>
+                  <component :is="stat.trend === 'up' ? 'ArrowUp' : 'ArrowDown'" />
+                </el-icon>
               </div>
             </div>
-          </el-card>
+          </div>
+        </div>
 
-          <el-card class="history-card">
-            <template #header>
-              <div class="card-header">
-                <span>训练记录</span>
-                <div class="header-controls">
-                  <el-date-picker
-                    v-model="startDate"
-                    type="date"
-                    placeholder="开始日期"
-                    format="YYYY-MM-DD"
-                    value-format="YYYY-MM-DD"
-                    :disabled-date="disableStartDate"
-                    style="margin-right: 10px; width: 160px"
-                    @change="handleDateChange"
-                  />
-                  <el-date-picker
-                    v-model="endDate"
-                    type="date"
-                    placeholder="结束日期"
-                    format="YYYY-MM-DD"
-                    value-format="YYYY-MM-DD"
-                    :disabled-date="disableEndDate"
-                    style="margin-right: 10px; width: 160px"
-                    @change="handleDateChange"
-                  />
-                  <el-select 
-                    v-model="currentTrainingType" 
-                    placeholder="选择训练类型"
-                    style="margin-right: 10px"
-                    @change="handleTrainingTypeChange"
-                  >
-                    <el-option label="全部类型" value="all" />
-                    <el-option label="赛艇训练" value="赛艇训练" />
-                    <el-option label="力量训练" value="力量训练" />
-                    <el-option label="有氧训练" value="有氧训练" />
-                  </el-select>
-                  <el-button type="primary" @click="showUploadDialog">
-                    上传训练
-                  </el-button>
-                  <el-button @click="refreshHistory">
-                    <el-icon><Refresh /></el-icon>
-                  </el-button>
-                </div>
+        <!-- 训练趋势分析 -->
+        <div class="analysis-section">
+          <div class="section-header">
+            <h2>训练趋势分析</h2>
+            <div class="filter-group">
+              <div class="date-filters">
+                <el-date-picker
+                  v-model="trendStartDate"
+                  type="date"
+                  placeholder="开始日期"
+                  class="filter-item"
+                  :disabled-date="disableTrendStartDate"
+                  @change="handleTrendFilterChange"
+                />
+                <el-date-picker
+                  v-model="trendEndDate"
+                  type="date"
+                  placeholder="结束日期"
+                  class="filter-item"
+                  :disabled-date="disableTrendEndDate"
+                  @change="handleTrendFilterChange"
+                />
               </div>
-            </template>
-            <el-table :data="trainingHistory" style="width: 100%" v-loading="loading">
-              <el-table-column prop="trainingDate" label="日期" width="180">
-                <template #default="scope">
-                  {{ formatDate(scope.row.trainingDate) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="duration" label="时长" width="120">
-                <template #default="scope">
-                  {{ formatDuration(scope.row.duration) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="distance" label="距离(km)" width="120">
-                <template #default="scope">
-                  {{ (scope.row.distance || 0).toFixed(2) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="calories" label="卡路里" width="120">
-                <template #default="scope">
-                  {{ (scope.row.calories || 0).toFixed(2) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="type" label="训练类型" width="120">
-                <template #default="scope">
-                  {{ scope.row.type }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="100">
-                <template #default="scope">
-                  <el-button size="small" type="danger" @click="handleDeleteTraining(scope.row.id)">
-                    删除
-                  </el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </el-card>
-        </el-col>
+              <el-select 
+                v-model="trendTrainingType" 
+                placeholder="训练类型"
+                class="filter-item"
+                @change="handleTrendFilterChange"
+              >
+                <el-option label="赛艇训练" value="赛艇训练" />
+                <el-option label="力量训练" value="力量训练" />
+                <el-option label="有氧训练" value="有氧训练" />
+              </el-select>
+            </div>
+          </div>
 
-        <!-- 右侧AI助手 -->
-        <el-col :span="8">
-          <el-card class="ai-assistant-card">
-            <template #header>
-              <div class="card-header">
-                <span>AI 训练助手</span>
-                <el-button type="text" @click="clearChat">清空对话</el-button>
+          <!-- 训练数据概览 -->
+          <div class="overview-cards">
+            <div class="overview-card" v-for="(stat, index) in trendStatItems" :key="index">
+              <div class="overview-value">{{ stat.value }}</div>
+              <div class="overview-label">{{ stat.label }}</div>
+            </div>
+          </div>
+
+          <!-- 图表区域 -->
+          <div class="charts-container">
+            <div class="chart-row">
+              <div class="chart-wrapper">
+                <div ref="intensityChartRef" class="chart"></div>
               </div>
-            </template>
-            <div class="chat-container">
-              <el-scrollbar height="600px" ref="chatScrollbar">
-                <div class="chat-messages">
-                  <div v-for="(msg, index) in chatMessages" :key="index" 
-                       :class="['message', msg.type]">
-                    <div class="message-content">
-                      <template v-if="msg.mediaType">
-                        <div class="media-content">
-                          <img v-if="msg.mediaType === 'image'" :src="msg.mediaUrl" class="message-image"/>
-                          <video v-if="msg.mediaType === 'video'" :src="msg.mediaUrl" controls class="message-video"></video>
-                        </div>
-                      </template>
-                      {{ msg.content }}
+              <div class="chart-wrapper">
+                <div ref="progressChartRef" class="chart"></div>
+              </div>
+            </div>
+            <div class="chart-row">
+              <div class="chart-wrapper">
+                <div ref="timeDistributionChartRef" class="chart"></div>
+              </div>
+              <div class="chart-wrapper">
+                <div ref="goalCompletionChartRef" class="chart"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧AI助手面板 -->
+      <div class="ai-panel">
+        <div class="ai-header">
+          <h2>AI 训练助手</h2>
+          <el-button link @click="clearChat">清空对话</el-button>
+        </div>
+
+        <div class="chat-container">
+          <el-scrollbar ref="chatScrollbar">
+            <div class="chat-messages">
+              <div v-for="(msg, index) in chatMessages" :key="index" :class="['message', msg.type]">
+                <div class="message-content">
+                  <template v-if="msg.mediaType">
+                    <div class="media-content">
+                      <img v-if="msg.mediaType === 'image'" :src="msg.mediaUrl" class="message-image" />
+                      <video v-if="msg.mediaType === 'video'" :src="msg.mediaUrl" controls class="message-video"></video>
                     </div>
-                    <div class="message-time">{{ msg.time }}</div>
-                  </div>
-                  <div v-if="isLoading" class="message ai loading-message">
-                    <div class="typing-indicator">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  </div>
+                  </template>
+                  {{ msg.content }}
                 </div>
-              </el-scrollbar>
-              <div class="chat-input">
-                <el-upload
-                  class="media-upload"
-                  :show-file-list="false"
-                  :before-upload="handleUpload"
-                  accept="image/*,video/*"
-                >
-                  <el-button class="upload-btn" type="primary" plain>
-                    <el-icon><PictureRounded /></el-icon>
-                    上传图片/视频
-                  </el-button>
-                </el-upload>
-                <div class="input-wrapper">
-                  <el-input v-model="chatInput" placeholder="请输入您的问题" 
-                           @keyup.enter="sendMessage">
-                    <template #append>
-                      <el-button type="primary" @click="sendMessage" :loading="isLoading">发送</el-button>
-                    </template>
-                  </el-input>
+                <div class="message-time">{{ msg.time }}</div>
+              </div>
+              <div v-if="isLoading" class="message ai loading-message">
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
                 </div>
               </div>
             </div>
-          </el-card>
-        </el-col>
-      </el-row>
+          </el-scrollbar>
+        </div>
+
+        <div class="chat-input-area">
+          <el-upload class="media-upload" :show-file-list="false" :before-upload="handleUpload" accept="image/*,video/*">
+            <el-button class="upload-btn" type="primary" text>
+              <el-icon>
+                <PictureRounded />
+              </el-icon>
+            </el-button>
+          </el-upload>
+          <div class="input-wrapper">
+            <el-input v-model="chatInput" placeholder="输入问题，按回车发送" @keyup.enter="sendMessage">
+              <template #append>
+                <el-button type="primary" @click="sendMessage" :loading="isLoading">
+                  发送
+                </el-button>
+              </template>
+            </el-input>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- 上传训练记录弹窗 -->
-    <el-dialog 
-      :title="selectedTraining ? '编辑训练记录' : '新增训练记录'" 
-      v-model="uploadDialogVisible" 
-      width="500px"
-    >
-      <el-form 
-        ref="formRef"
-        :model="uploadForm" 
-        label-width="100px" 
-        :rules="formRules"
-      >
-        <el-form-item label="训练类型" prop="type">
-          <el-select v-model="uploadForm.type" placeholder="请选择训练类型">
+    <!-- 训练记录表格 -->
+    <div class="records-section">
+      <div class="section-header">
+        <h2>训练记录</h2>
+        <div class="filter-group">
+          <div class="date-filters">
+            <el-date-picker v-model="startDate" type="date" placeholder="开始日期" class="filter-item"
+              :disabled-date="disableStartDate" @change="handleDateChange" />
+            <el-date-picker v-model="endDate" type="date" placeholder="结束日期" class="filter-item"
+              :disabled-date="disableEndDate" @change="handleDateChange" />
+          </div>
+          <el-select v-model="currentTrainingType" placeholder="训练类型" class="filter-item"
+            @change="handleTrainingTypeChange">
+            <el-option label="全部类型" value="all" />
             <el-option label="赛艇训练" value="赛艇训练" />
             <el-option label="力量训练" value="力量训练" />
             <el-option label="有氧训练" value="有氧训练" />
           </el-select>
-        </el-form-item>
-        <el-form-item label="训练日期" prop="trainingDate">
-          <el-date-picker
-            v-model="uploadForm.trainingDate"
-            type="datetime"
-            placeholder="选择训练日期时间"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
-          />
-        </el-form-item>
-        <el-form-item label="训练时长" prop="duration">
-          <el-input-number v-model="uploadForm.duration" :min="1" :max="999" />
-          <span class="unit-label">分钟</span>
-        </el-form-item>
-        <el-form-item label="训练距离" prop="distance">
-          <el-input-number v-model="uploadForm.distance" :min="0" :precision="1" :step="0.1" />
-          <span class="unit-label">公里</span>
-        </el-form-item>
-        <el-form-item label="消耗卡路里" prop="calories">
-          <el-input-number v-model="uploadForm.calories" :min="0" />
-          <span class="unit-label">卡路里</span>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="uploadDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmitTraining">确认</el-button>
-        </span>
-      </template>
-    </el-dialog>
+          <div class="action-group">
+            <el-button type="primary" @click="handleAIAnalysis">
+              <el-icon>
+                <Monitor />
+              </el-icon>智能分析
+            </el-button>
+            <el-button type="primary" @click="showUploadDialog">
+              <el-icon>
+                <Plus />
+              </el-icon>上传训练
+            </el-button>
+            <el-button @click="refreshHistory">
+              <el-icon>
+                <Refresh />
+              </el-icon>
+            </el-button>
+          </div>
+        </div>
+      </div>
 
-    <!-- 添加分页组件 -->
-    <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="currentPage"
-        :page-size="pageSize"
-        :total="totalRecords"
-        @current-change="handlePageChange"
-        layout="prev, pager, next"
-      />
+      <div class="table-container">
+        <el-table :data="trainingHistory" style="width: 100%" v-loading="loading"
+          :header-cell-style="{ background: '#f5f7fa' }">
+          <el-table-column prop="trainingDate" label="日期" min-width="180">
+            <template #default="scope">
+              {{ formatDate(scope.row.trainingDate) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="duration" label="时长" min-width="120">
+            <template #default="scope">
+              {{ formatDuration(scope.row.duration) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="distance" label="距离(km)" min-width="120">
+            <template #default="scope">
+              {{ (scope.row.distance || 0).toFixed(2) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="calories" label="卡路里" min-width="120">
+            <template #default="scope">
+              {{ (scope.row.calories || 0).toFixed(2) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="type" label="训练类型" min-width="120" />
+          <el-table-column label="操作" width="100" fixed="right">
+            <template #default="scope">
+              <el-button link type="danger" @click="handleDeleteTraining(scope.row.id)">
+                删除
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <div class="pagination-wrapper">
+          <el-pagination v-model:current-page="currentPage" :page-size="pageSize" :total="totalRecords"
+            @current-change="handlePageChange" layout="total, prev, pager, next" background />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -367,15 +231,15 @@ import { ElMessageBox } from 'element-plus/es'
 import 'element-plus/es/components/base/style/css'
 import 'element-plus/es/components/message-box/style/css'
 import { useUserStore } from '@/stores/user'
-import { 
-    submitTrainingRecord, 
-    queryTrainingRecords, 
-    getTrainingStatistics,
-    updateTrainingRecord,
-    deleteTrainingRecord 
+import {
+  submitTrainingRecord,
+  queryTrainingRecords,
+  getTrainingStatistics,
+  updateTrainingRecord,
+  deleteTrainingRecord
 } from '@/api/training_record'
 import axios from 'axios'
-import { PictureRounded, Plus } from '@element-plus/icons-vue'
+import { PictureRounded, Plus, Refresh, Monitor } from '@element-plus/icons-vue'
 import * as echarts from 'echarts/core'
 import { PieChart, LineChart, BarChart, RadarChart } from 'echarts/charts'
 import {
@@ -436,7 +300,8 @@ const trendStats = ref({})
 
 // 添加趋势分析筛选相关的响应式变量
 const trendTrainingType = ref('赛艇训练') // 默认选择赛艇训练
-const trendDateRange = ref(null)
+const trendStartDate = ref(null)
+const trendEndDate = ref(null)
 
 // 添加图表引用
 const intensityChartRef = ref(null)
@@ -472,13 +337,13 @@ const handleDateChange = () => {
   if (startDate.value && endDate.value) {
     const start = new Date(startDate.value).getTime()
     const end = new Date(endDate.value).getTime()
-    
+
     if (start > end) {
       ElMessage.warning('开始日期不能大于结束日期')
       return
     }
   }
-  
+
   refreshHistory()
 }
 
@@ -490,7 +355,7 @@ const fetchStatistics = async () => {
       startDate: startDate.value || undefined,
       endDate: endDate.value || undefined
     }
-    
+
     const res = await getTrainingStatistics(queryParams)
 
     if (res.success && res.data) {
@@ -548,14 +413,14 @@ const refreshHistory = async () => {
 
     const res = await queryTrainingRecords(queryParams)
     console.log('Query response:', res)
-    
+
     if (res && res.data) {
       console.log('Processing training data:', res.data)
       // 将数据按时间倒序排列
       const sortedList = [...res.data.list].sort((a, b) => {
         return new Date(b.trainingDate) - new Date(a.trainingDate)
       })
-      
+
       trainingHistory.value = sortedList.map(record => {
         console.log('Processing record:', record)
         return {
@@ -567,13 +432,13 @@ const refreshHistory = async () => {
           type: record.type || '未知类型'
         }
       })
-      
+
       totalRecords.value = Number(res.data.total || 0)
       pageSize.value = Number(res.data.size || 10)
       currentPage.value = Number(res.data.page || 1)
-      
+
       console.log('Processed training history:', trainingHistory.value)
-      
+
       if (trainingHistory.value.length === 0) {
         ElMessage.info('暂无训练记录')
       }
@@ -597,6 +462,62 @@ const refreshHistory = async () => {
 const handlePageChange = async (page) => {
   currentPage.value = page
   await refreshHistory()
+}
+
+// 处理AI分析
+const handleAIAnalysis = async () => {
+  try {
+    isLoading.value = true
+    // 获取训练统计数据
+    const statsParams = {
+      type: currentTrainingType.value === 'all' ? undefined : currentTrainingType.value,
+      startDate: startDate.value || undefined,
+      endDate: endDate.value || undefined
+    }
+
+    const statsRes = await getTrainingStatistics(statsParams)
+
+    if (!statsRes.success) {
+      throw new Error(statsRes.message || '获取训练统计数据失败')
+    }
+
+    // 构建发送给AI的消息
+    const statsData = statsRes.data
+    const aiPrompt = `
+      请根据以下赛艇训练数据进行分析并给出建议：
+      总训练时长：${Math.floor((statsData.totalDuration || 0) / 60)}小时${(statsData.totalDuration || 0) % 60}分钟
+      总训练距离：${(statsData.totalDistance || 0).toFixed(1)}km
+      平均配速：${statsData.averagePace || '-'}
+      与上周相比：
+      - 训练次数变化：${statsData.sessionChange > 0 ? '+' : ''}${statsData.sessionChange || 0}%
+      - 训练时长变化：${statsData.durationChange > 0 ? '+' : ''}${statsData.durationChange || 0}%
+      - 训练距离变化：${statsData.distanceChange > 0 ? '+' : ''}${statsData.distanceChange || 0}%
+      - 配速变化：${statsData.paceChange ? statsData.paceChange + '秒' : '-'}
+    `
+
+    // 调用AI接口
+    const response = await axios.post('/ai/chat', {
+      user_id: userStore.userInfo.id,
+      question: aiPrompt
+    })
+
+    if (response.data.success) {
+      // 添加AI回复到聊天记录
+      chatMessages.value.push({
+        content: response.data.data,
+        type: 'ai',
+        time: new Date().toLocaleTimeString()
+      })
+      scrollToBottom()
+    } else {
+      throw new Error(response.data.message || '获取AI分析失败')
+    }
+  } catch (error) {
+    console.error('AI分析失败:', error)
+    ElMessage.error(error.message || 'AI分析失败，请稍后重试')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 // 提交训练记录
@@ -656,11 +577,11 @@ const sendMessage = async () => {
     time: new Date().toLocaleTimeString()
   }
   chatMessages.value.push(newMessage)
-  
+
   // 清空输入框
   const userQuestion = chatInput.value
   chatInput.value = ''
-  
+
   try {
     isLoading.value = true
     const response = await axios.post('/ai/chat', {
@@ -705,16 +626,16 @@ const clearChat = () => {
 const refreshAnalysis = async () => {
   try {
     const res = await getTrainingStatistics({
-        type: 'rowing',
-        startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],  // 最近7天
-        endDate: new Date().toISOString().split('T')[0]
+      type: 'rowing',
+      startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],  // 最近7天
+      endDate: new Date().toISOString().split('T')[0]
     })
-    
+
     if (res.success && res.data) {
-        // 使用实际的统计数据生成报告
-        // ... 处理统计数据的逻辑
+      // 使用实际的统计数据生成报告
+      // ... 处理统计数据的逻辑
     } else {
-        analysisContent.value = `
+      analysisContent.value = `
             <h3>本周训练分析报告</h3>
             <p>您本周共完成5次训练，总距离26.5公里，平均配速2:05。相比上周：</p>
             <ul>
@@ -753,7 +674,7 @@ const formatDate = (dateString) => {
   try {
     const date = new Date(dateString)
     if (isNaN(date.getTime())) return dateString
-    
+
     return date.toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
@@ -780,10 +701,10 @@ const handleDeleteTraining = async (id) => {
       confirmButtonText: '确定',
       cancelButtonText: '取消'
     })
-    
+
     loading.value = true
     const res = await deleteTrainingRecord(id)
-    
+
     if (res.success) {
       ElMessage.success(res.data || '删除成功')
       // 刷新数据
@@ -871,17 +792,43 @@ const handleUpload = async (file) => {
   return false // 阻止默认上传行为
 }
 
-// 处理趋势分析筛选条件变化
+// 添加趋势分析日期验证函数
+const disableTrendStartDate = (time) => {
+  if (trendEndDate.value) {
+    return time.getTime() > new Date(trendEndDate.value).getTime()
+  }
+  return false
+}
+
+const disableTrendEndDate = (time) => {
+  if (trendStartDate.value) {
+    return time.getTime() < new Date(trendStartDate.value).getTime()
+  }
+  return false
+}
+
+// 修改趋势分析筛选条件变化处理函数
 const handleTrendFilterChange = async () => {
   try {
+    // 验证日期是否有效
+    if (trendStartDate.value && trendEndDate.value) {
+      const start = new Date(trendStartDate.value).getTime()
+      const end = new Date(trendEndDate.value).getTime()
+      
+      if (start > end) {
+        ElMessage.warning('开始日期不能大于结束日期')
+        return
+      }
+    }
+
     const params = {
       type: trendTrainingType.value,
-      startDate: trendDateRange.value ? trendDateRange.value[0] : undefined,
-      endDate: trendDateRange.value ? trendDateRange.value[1] : undefined
+      startDate: trendStartDate.value || undefined,
+      endDate: trendEndDate.value || undefined
     }
 
     console.log('Fetching trend stats with params:', params)
-    
+
     const res = await getTrainingStatistics(params)
     console.log('Trend stats response:', res)
 
@@ -921,7 +868,7 @@ const getDefaultTrendStats = () => ({
 // 初始化训练强度分布图
 const initIntensityChart = (data) => {
   if (!intensityChartRef.value) return
-  
+
   intensityChart = echarts.init(intensityChartRef.value)
   const option = {
     title: {
@@ -974,7 +921,7 @@ const initIntensityChart = (data) => {
 // 初始化训练进展趋势图
 const initProgressChart = (data) => {
   if (!progressChartRef.value) return
-  
+
   progressChart = echarts.init(progressChartRef.value)
   const option = {
     title: {
@@ -1041,7 +988,7 @@ const initProgressChart = (data) => {
 // 初始化训练时间分布图
 const initTimeDistributionChart = (data) => {
   if (!timeDistributionChartRef.value) return
-  
+
   timeDistributionChart = echarts.init(timeDistributionChartRef.value)
   const option = {
     title: {
@@ -1083,7 +1030,7 @@ const initTimeDistributionChart = (data) => {
 // 初始化目标完成度图
 const initGoalCompletionChart = (data) => {
   if (!goalCompletionChartRef.value) return
-  
+
   goalCompletionChart = echarts.init(goalCompletionChartRef.value)
   const option = {
     title: {
@@ -1126,7 +1073,7 @@ const initGoalCompletionChart = (data) => {
 // 初始化训练数据对比图
 const initComparisonChart = (data) => {
   if (!comparisonChartRef.value) return
-  
+
   comparisonChart = echarts.init(comparisonChartRef.value)
   const option = {
     title: {
@@ -1238,247 +1185,483 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.common-container {
-  padding: 20px;
-  background-color: #f5f7fa;
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
 }
 
-.statistics-cards {
-  margin-bottom: 20px;
+.content-wrapper {
+  display: flex;
+  gap: 24px;
+  min-height: 600px; /* 设置最小高度，确保内容对齐 */
+}
+
+/* 左侧主面板样式 */
+.main-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0; /* 防止flex子项溢出 */
+}
+
+/* 右侧AI助手面板样式 */
+.ai-panel {
+  width: 360px;
+  background: #fff;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  height: 1030px; /* 固定高度，与左侧内容对齐 */
+  flex-shrink: 0; /* 防止被压缩 */
+}
+
+/* 训练记录表格区域样式 */
+.records-section {
+  width: 100%; /* 横向铺满 */
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  margin-top: auto; /* 自动调整顶部间距 */
+}
+
+@media (max-width: 1200px) {
+  .content-wrapper {
+    flex-direction: column;
+  }
+
+  .ai-panel {
+    width: 100%;
+    height: 500px;
+  }
+}
+
+/* 统计卡片样式 */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
 }
 
 .stat-card {
-  .stat-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .stat-value {
-    font-size: 24px;
-    font-weight: bold;
-    margin: 10px 0;
-  }
-
-  .stat-change {
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-
-    &.up {
-      color: #67c23a;
-    }
-
-    &.down {
-      color: #f56c6c;
-    }
-  }
-}
-
-.main-content {
-  margin-top: 20px;
-}
-
-.chart-card {
-  margin-bottom: 20px;
-  
-  .chart-container {
-    height: 400px;
-  }
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.chat-container {
-  height: 650px;
-  display: flex;
-  flex-direction: column;
-}
-
-.message {
-  margin: 10px;
-  padding: 10px;
-  border-radius: 8px;
-  max-width: 80%;
-
-  &.user {
-    background-color: #e8f5fe;
-    margin-left: auto;
-  }
-
-  &.ai {
-    background-color: #f4f4f5;
-    margin-right: auto;
-  }
-}
-
-.chat-input {
-  margin-top: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.media-upload {
-  display: flex;
-  justify-content: center;
-}
-
-.upload-btn {
-  width: 140px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-
-.input-wrapper {
-  width: 100%;
-}
-
-/* 确保图标垂直居中 */
-.upload-btn .el-icon {
-  margin-right: 4px;
-  font-size: 16px;
-}
-
-/* 添加响应式设计 */
-@media (max-width: 1200px) {
-  .el-col {
-    width: 100% !important;
-  }
-}
-
-/* 在 style 中添加分页样式 */
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-/* 添加表单相关样式 */
-.unit-label {
-  margin-left: 8px;
-  color: #666;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.loading-message {
-  padding: 15px;
-}
-
-.typing-indicator {
-  display: flex;
-  gap: 5px;
-}
-
-.typing-indicator span {
-  width: 8px;
-  height: 8px;
-  background-color: #90939975;
-  border-radius: 50%;
-  animation: bounce 1.4s infinite ease-in-out;
-}
-
-.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
-}
-
-.upload-inline {
-  display: inline-block;
-  margin-right: 4px;
-}
-
-.message-image {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 4px;
-  margin: 5px 0;
-}
-
-.message-video {
-  max-width: 300px;
-  max-height: 200px;
-  border-radius: 4px;
-  margin: 5px 0;
-}
-
-.media-content {
-  margin-bottom: 8px;
-}
-
-.trend-statistics {
+  background: #fff;
+  border-radius: 12px;
   padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
 }
 
-.stat-item {
-  text-align: center;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
-.stat-label {
-  color: #666;
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--el-color-primary-light-9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-color-primary);
+  font-size: 24px;
+}
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-title {
+  color: #909399;
   font-size: 14px;
   margin-bottom: 8px;
 }
 
 .stat-value {
-  font-size: 20px;
-  font-weight: bold;
-  color: #409EFF;
+  font-size: 24px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.chart-controls {
+.stat-change {
+  font-size: 13px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
 }
 
-.charts-section {
-  margin-top: 30px;
+.stat-change.up {
+  color: #67c23a;
+}
+
+.stat-change.down {
+  color: #f56c6c;
+}
+
+/* 分析区域样式 */
+.analysis-section,
+.records-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
+}
+
+.filter-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.action-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: auto; /* 将按钮组推到右侧 */
+}
+
+.filter-item {
+  min-width: 140px;
+}
+
+/* 概览卡片样式 */
+.overview-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.overview-card {
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.overview-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--el-color-primary);
+  margin-bottom: 8px;
+}
+
+.overview-label {
+  color: #606266;
+  font-size: 14px;
+}
+
+/* 图表区域样式 */
+.charts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
 }
 
 .chart-wrapper {
   background: #fff;
-  padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.chart-title {
+.chart-wrapper h3 {
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
   color: #303133;
+  margin: 0 0 16px 0;
   text-align: center;
-  margin-bottom: 4px;
 }
 
-.chart-subtitle {
+.chart {
+  height: 300px;
+}
+
+/* 表格区域样式 */
+.table-container {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pagination-wrapper {
+  padding: 16px;
+  display: flex;
+  justify-content: flex-end;
+  background: #fff;
+  border-top: 1px solid #ebeef5;
+}
+
+.ai-header {
+  padding: 16px;
+  border-bottom: 1px solid #ebeef5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ai-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
+}
+
+.chat-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message.user {
+  margin-left: auto;
+  align-items: flex-end;
+}
+
+.message.ai {
+  margin-right: auto;
+  align-items: flex-start;
+}
+
+.message-content {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+}
+
+.message.user .message-content {
+  background: var(--el-color-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.message.ai .message-content {
+  background: #f5f7fa;
+  color: #303133;
+  border-bottom-left-radius: 4px;
+}
+
+.message-time {
   font-size: 12px;
   color: #909399;
-  text-align: center;
-  margin-bottom: 20px;
 }
 
-/* 确保图表容器有足够的高度 */
-.chart-container {
-  min-height: 1000px;
+.chat-input-area {
+  padding: 12px;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.media-upload {
+  flex-shrink: 0;
+}
+
+.input-wrapper {
+  flex: 1;
+}
+
+.input-wrapper :deep(.el-input__wrapper) {
+  box-shadow: none;
+  border: 1px solid #dcdfe6;
+}
+
+.input-wrapper :deep(.el-input__wrapper):hover {
+  border-color: var(--el-color-primary);
+}
+
+.input-wrapper :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+.upload-btn {
+  height: 32px;
+  width: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dcdfe6;
+  transition: all 0.3s;
+}
+
+.upload-btn:hover {
+  border-color: var(--el-color-primary);
+  color: var(--el-color-primary);
+}
+
+.typing-indicator {
+  display: inline-flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background-color: #909399;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* 媒体内容样式 */
+.media-content {
+  margin-bottom: 8px;
+}
+
+.message-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+}
+
+.message-video {
+  max-width: 240px;
+  max-height: 180px;
+  border-radius: 8px;
+}
+
+/* 响应式布局 */
+@media (max-width: 1400px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-row {
+    grid-template-columns: 1fr;
+  }
+
+  .overview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .content-wrapper {
+    flex-direction: column;
+  }
+
+  .ai-panel {
+    width: 100%;
+    height: 500px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .stats-row,
+  .overview-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-filters {
+    flex-direction: column;
+  }
+
+  .filter-item {
+    width: 100%;
+  }
+
+  .action-group {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 12px;
+    gap: 8px;
+  }
 }
 </style>
