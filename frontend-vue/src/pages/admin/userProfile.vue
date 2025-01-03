@@ -145,7 +145,22 @@
                   placeholder="请输入新密码"
                   show-password
                   required
+                  @input="validatePasswordInput"
                 />
+                <div v-if="passwordValidation.show" class="password-validation-tips">
+                  <div :class="['validation-item', passwordValidation.length ? 'valid' : 'invalid']">
+                    长度在8-20个字符之间
+                  </div>
+                  <div :class="['validation-item', passwordValidation.uppercase ? 'valid' : 'invalid']">
+                    包含大写字母
+                  </div>
+                  <div :class="['validation-item', passwordValidation.lowercase ? 'valid' : 'invalid']">
+                    包含小写字母
+                  </div>
+                  <div :class="['validation-item', passwordValidation.number ? 'valid' : 'invalid']">
+                    包含数字
+                  </div>
+                </div>
               </div>
               <div class="form__group">
                 <label for="confirmNewPassword">确认新密码:</label>
@@ -202,6 +217,14 @@ export default {
       code: "",
       newPassword: "",
       confirmNewPassword: "",
+    });
+
+    const passwordValidation = reactive({
+      show: false,
+      length: false,
+      uppercase: false,
+      lowercase: false,
+      number: false
     });
 
     const isEditing = ref(false);
@@ -323,11 +346,21 @@ export default {
       }
     };
 
-    // 密码验证函数
+    // 实时验证密码
+    const validatePasswordInput = (value) => {
+      passwordValidation.show = true;
+      passwordValidation.length = value.length >= 8 && value.length <= 20;
+      passwordValidation.uppercase = /[A-Z]/.test(value);
+      passwordValidation.lowercase = /[a-z]/.test(value);
+      passwordValidation.number = /[0-9]/.test(value);
+    };
+
+    // 修改密码验证函数
     const validatePassword = (password) => {
-      const lengthValid = password.length >= 6 && password.length <= 20;
-      const pattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/;
-      return lengthValid && pattern.test(password);
+      return passwordValidation.length && 
+             passwordValidation.uppercase && 
+             passwordValidation.lowercase && 
+             passwordValidation.number;
     };
 
     // 提交修改密码表单
@@ -353,7 +386,7 @@ export default {
         return;
       }
       if (!validatePassword(passwordData.newPassword)) {
-        alert("密码应为6到20个字符，且包含至少一个字母和一个数字");
+        alert("密码必须包含大小写字母和数字，长度在8-20个字符之间");
         return;
       }
 
@@ -511,6 +544,8 @@ export default {
       userStats,
       fetchUserStats,
       passwordVisible,
+      passwordValidation,
+      validatePasswordInput,
     };
   },
 };
@@ -1238,5 +1273,56 @@ export default {
 
 .form__group :deep(.el-input__suffix) {
   padding-right: 12px;
+}
+
+/* 添加密码验证提示样式 */
+.password-validation-tips {
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  font-size: 0.85em;
+}
+
+.validation-item {
+  margin: 4px 0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.validation-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.validation-item.valid {
+  color: #28a745;
+}
+
+.validation-item.invalid {
+  color: #dc3545;
+}
+
+.validation-item.valid::before {
+  background-color: #28a745;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
+  background-size: 10px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.validation-item.invalid::before {
+  background-color: #dc3545;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z'/%3E%3C/svg%3E");
+  background-size: 8px;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 </style>
