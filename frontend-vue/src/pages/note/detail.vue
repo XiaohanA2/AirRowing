@@ -262,7 +262,7 @@ export default {
             }
             try {
                 const response = await noteCountService({ noteId });
-                console.log("笔记计数接口返回数据：", response);
+                console.log("帖子计数接口返回数据：", response);
                 if (response.success) {
                     this.likeCount = response.data.likeTotal || 0;
                     console.log("点赞数：", this.likeCount);
@@ -273,7 +273,7 @@ export default {
                 }
             } catch (error) {
                 // 捕获500错误，在控制台记录，但不弹错误提示，使用默认值兜底
-                console.error("获取笔记计数信息失败，使用默认计数值:", error);
+                console.error("获取帖子计数信息失败，使用默认计数值:", error);
                 this.likeCount = 0;
                 // 可选：不使用 ElMessage 提示用户错误，将其默默处理
                 // ElMessage.error("获取计数失败，已使用默认值");

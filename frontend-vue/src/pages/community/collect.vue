@@ -69,7 +69,7 @@ const collectList = async () => {//获取收藏列表相关
   let result = await collectListService(params);
 
   articles.value = result.data;
-  // 为了并行处理多个收藏笔记详情��请求，使用 Promise.all
+  // 为了并行处理多个收藏帖子详情��请求，使用 Promise.all
   const updatedArticles = await Promise.all(
     articles.value.map(async (article) => {
       /* console.log(article.id); */
@@ -89,7 +89,7 @@ const collectList = async () => {//获取收藏列表相关
   articles.value = updatedArticles;
 }
 
-const router = useRouter();//新的笔记详情页面，把笔记id传过去
+const router = useRouter();//新的帖子详情页面，把帖子id传过去
 const openDrawer2 = (id) => {
   router.push({ name: 'NoteDetail', params: { id, userId: userId.value } });
 };

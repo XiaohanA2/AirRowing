@@ -36,7 +36,7 @@
             :class="{ active: currentTab === 'notes' }"
             @click="switchTab('notes')"
           >
-            我的笔记
+            我的帖子
           </button>
           <button 
             class="tab-btn" 
@@ -52,7 +52,7 @@
           @click="openPublishModal"
           v-if="status === 1 && currentTab === 'notes'"
         >
-          发布笔记
+          发布帖子
         </button>
       </div>
 
@@ -147,7 +147,7 @@
       <transition name="fade">
         <div v-if="isEditModalOpen" class="modal-overlay" @click.self="closeEditModal">
           <div class="modal">
-            <h2>编辑笔记</h2>
+            <h2>编辑帖子</h2>
             <form @submit.prevent="submitEditNote" class="form">
               <label>
                 标题:
@@ -215,9 +215,9 @@
       </transition>
 
       <div v-if="!loading && currentTab === 'notes' && myNotes.length === 0" class="empty-state">
-        <img src="/assets/developer.png" alt="没有笔记" />
-        <h3>还没有笔记</h3>
-        <p>点击"发布笔记"开始创作吧！</p>
+        <img src="/assets/developer.png" alt="没有帖子" />
+        <h3>还没有帖子</h3>
+        <p>点击"发布帖子"开始创作吧！</p>
       </div>
 
       <transition name="fade">
@@ -236,7 +236,7 @@
       >
         <div class="delete-dialog-content">
           <i class="el-icon-warning" style="color: #ff4949; font-size: 24px;"></i>
-          <p>确定要删除这篇笔记吗？</p>
+          <p>确定要删除这篇帖子吗？</p>
           <p class="delete-warning">删除后将无法恢复！</p>
         </div>
         <template #footer>
@@ -382,11 +382,11 @@ export default {
           note.imgUris = response.data.data.imgUris || [];
           note.updateTime = response.data.data.updateTime;
         } else {
-          console.error(`获取笔记详情失败（ID: ${note.id}）:`, response.data.message);
+          console.error(`获取帖子详情失败（ID: ${note.id}）:`, response.data.message);
           note.imgUris = [];
         }
       } catch (err) {
-        console.error(`获取笔记详情时出错（ID: ${note.id}）:`, err);
+        console.error(`获取帖子详情时出错（ID: ${note.id}）:`, err);
         note.imgUris = [];
       }
     };
@@ -416,7 +416,7 @@ export default {
 
     const fetchMyNotes = async () => {
       if (!userId.value) {
-        error.value = '无法获取用户 ID，无法获取笔记列表。';
+        error.value = '无法获取用户 ID，无法获取帖子列表。';
         return;
       }
       try {
@@ -452,11 +452,11 @@ export default {
 
           myNotes.value = [...myNotes.value, ...fetchedNotes];
         } else {
-          throw new Error(response.data.message || '获取笔记列表失败。');
+          throw new Error(response.data.message || '获取帖子列表失败。');
         }
       } catch (err) {
-        console.error('获取笔记列表时出错:', err);
-        error.value = err.message || '获取笔记列表时出错。';
+        console.error('获取帖子列表时出错:', err);
+        error.value = err.message || '获取帖子列表时出错。';
       } finally {
         loading.value = false;
       }
@@ -528,14 +528,14 @@ export default {
               isTop: currentNote.isTop
             };
           }
-          showToast('笔记已更新', 'success');
+          showToast('帖子已更新', 'success');
           closeEditModal();
         } else {
-          throw new Error(response.data.message || '更新笔记失败。');
+          throw new Error(response.data.message || '更新帖子失败。');
         }
       } catch (err) {
-        console.error('更新笔记时出错:', err);
-        showToast(err.message || '更新笔记时出错。', 'error');
+        console.error('更新帖子时出错:', err);
+        showToast(err.message || '更新帖子时出错。', 'error');
       } finally {
         loading.value = false;
       }
@@ -590,7 +590,7 @@ export default {
           }
         );
         if (response.data.success) {
-          alert('笔记已发布。');
+          alert('帖子已发布。');
           console.log(newNote.imgUris);
           myNotes.value = [];
           page.value = 1;
@@ -598,11 +598,11 @@ export default {
           fetchMyNotes();
           closePublishModal();
         } else {
-          throw new Error(response.data.message || '发布笔记失败。');
+          throw new Error(response.data.message || '发布帖子失败。');
         }
       } catch (err) {
-        console.error('发布笔记时出错:', err);
-        alert(err.message || '发布笔记时出错。');
+        console.error('发布帖子时出错:', err);
+        alert(err.message || '发布帖子时出错。');
       } finally {
         loading.value = false;
       }
@@ -720,15 +720,15 @@ export default {
         );
         
         if (response.data.success) {
-          showToast('笔记删除成功', 'success');
+          showToast('帖子删除成功', 'success');
           myNotes.value = myNotes.value.filter(n => n.id !== noteToDelete.value.id);
           deleteDialogVisible.value = false;
         } else {
-          throw new Error(response.data.message || '删除笔记失败。');
+          throw new Error(response.data.message || '删除帖子失败。');
         }
       } catch (err) {
-        console.error('删除笔记时出错:', err);
-        showToast(err.message || '删除笔记失败', 'error');
+        console.error('删除帖子时出错:', err);
+        showToast(err.message || '删除帖子失败', 'error');
       } finally {
         loading.value = false;
         noteToDelete.value = null;
@@ -752,14 +752,14 @@ export default {
           }
         );
         if (response.data.success) {
-          alert('笔记已恢复。');
+          alert('帖子已恢复。');
           myNotes.value = myNotes.value.filter(n => n.id !== note.id);
         } else {
-          throw new Error(response.data.message || '恢复笔记失败。');
+          throw new Error(response.data.message || '恢复帖子失败。');
         }
       } catch (err) {
-        console.error('恢复笔记时出错:', err);
-        alert(err.message || '恢复笔记时出错。');
+        console.error('恢复帖子时出错:', err);
+        alert(err.message || '恢复帖子时出错。');
       } finally {
         loading.value = false;
       }
@@ -784,12 +784,12 @@ export default {
         );
         if (response.data.success) {
           note.isTop = !note.isTop;
-          alert(note.isTop ? '笔记已置顶。' : '笔记已取消置顶。');
+          alert(note.isTop ? '帖子已置顶。' : '帖子已取消置顶。');
         } else {
           throw new Error(response.data.message || '操作失败。');
         }
       } catch (err) {
-        console.error('置顶笔记时出错:', err);
+        console.error('置顶帖子时出错:', err);
         alert(err.message || '操作时出错。');
       } finally {
         loading.value = false;
@@ -815,7 +815,7 @@ export default {
         );
         if (response.data.success) {
           note.visible = note.visible === 1 ? 0 : 1;
-          alert(note.visible === 1 ? '笔记现在公开可见。' : '笔记现在仅自己可见。');
+          alert(note.visible === 1 ? '帖子现在公开可见。' : '帖子现在仅自己可见。');
         } else {
           throw new Error(response.data.message || '操作失败。');
         }

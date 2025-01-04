@@ -110,7 +110,7 @@
                     </div>
                     <div class="stat-item">
                       <span class="stat-value">{{ user.userStats?.noteTotal || 0 }}</span>
-                      <span class="stat-label">笔记</span>
+                      <span class="stat-label">帖子</span>
                     </div>
                     <div class="stat-item">
                       <span class="stat-value">{{ user.userStats?.likeTotal || 0 }}</span>

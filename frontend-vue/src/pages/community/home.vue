@@ -158,7 +158,7 @@ export default {
             this.totalNotes = this.currentPage * this.pageSize + response.length;
             this.currentPageInput = this.currentPage;
           } else {
-            ElMessage.warning("没有更多笔记了~");
+            ElMessage.warning("没有更多帖子了~");
             if (this.currentPage > 1) {
               this.currentPage--;
               this.currentPageInput = this.currentPage;
