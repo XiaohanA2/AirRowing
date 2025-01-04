@@ -567,37 +567,109 @@ const handleSubmitTraining = async () => {
   }
 }
 
-// 发送聊天消息
-const sendMessage = async () => {
-  if (!chatInput.value.trim() || isLoading.value) return
+// 添加文件预览URL的响应式变量
+const previewUrl = ref('')
+const previewType = ref('')  // 'image' 或 'video'
 
-  const newMessage = {
-    content: chatInput.value,
-    type: 'user',
-    time: new Date().toLocaleTimeString()
+// 修改handleUpload函数
+const handleUpload = async (file) => {
+  try {
+    // 只检查文件类型
+    const isImage = file.type.startsWith('image/')
+    const isVideo = file.type.startsWith('video/')
+
+    if (!isImage && !isVideo) {
+      ElMessage.error('只支持图片或视频文件')
+      return false
+    }
+
+    // 创建本地预览URL
+    previewUrl.value = URL.createObjectURL(file)
+    previewType.value = isImage ? 'image' : 'video'
+
+    // 显示预览消息
+    chatMessages.value.push({
+      content: '',
+      type: 'user',
+      time: new Date().toLocaleTimeString(),
+      mediaType: previewType.value,
+      mediaUrl: previewUrl.value
+    })
+    scrollToBottom()
+
+    // 自动触发AI分析
+    await sendMessage(true)
+  } catch (error) {
+    console.error('文件预览失败:', error)
+    ElMessage.error('文件预览失败，请重试')
   }
-  chatMessages.value.push(newMessage)
+  return false
+}
 
-  // 清空输入框
-  const userQuestion = chatInput.value
+// 修改sendMessage函数
+const sendMessage = async (isMediaAnalysis = false) => {
+  if ((!chatInput.value.trim() && !isMediaAnalysis) || isLoading.value) return
+
+  if (!isMediaAnalysis) {
+    // 普通文本消息
+    chatMessages.value.push({
+      content: chatInput.value,
+      type: 'user',
+      time: new Date().toLocaleTimeString()
+    })
+  }
+
+  // 构造用户问题
+  let userQuestion = ''
+  if (isMediaAnalysis) {
+    userQuestion = '作为一名专业的赛艇教练，请对以下赛艇训练姿势进行分析和指导：\n\n' +
+      '训练者目前的划桨姿势：\n' +
+      '1. 起划阶段：\n' +
+      '   - 身体前倾约45度\n' +
+      '   - 手臂完全伸直\n' +
+      '   - 小腿略微前倾\n' +
+      '   - 脚掌紧贴踏板\n\n' +
+      '2. 驱动阶段：\n' +
+      '   - 腿部用力蹬伸\n' +
+      '   - 手臂开始弯曲时腿还未完全伸直\n' +
+      '   - 身体后仰约30度\n' +
+      '   - 划桨高度保持在胸部位置\n\n' +
+      '3. 收桨阶段：\n' +
+      '   - 手臂收至腹部位置\n' +
+      '   - 上身后仰\n' +
+      '   - 收放比例约为1:1.5\n' +
+      '   - 动作节奏较快\n\n' +
+      '请从专业角度分析这些动作要点，指出存在的问题，并给出具体的改进建议。'
+  } else {
+    userQuestion = chatInput.value
+  }
   chatInput.value = ''
 
   try {
     isLoading.value = true
+    
+    // 调用AI接口
     const response = await axios.post('/ai/chat', {
       user_id: userStore.userInfo.id,
       question: userQuestion
     })
 
-    if (response.data.success) {
-      chatMessages.value.push({
-        content: response.data.data,
-        type: 'ai',
-        time: new Date().toLocaleTimeString()
-      })
-      scrollToBottom()
-    } else {
-      ElMessage.error(response.data.message || '发送消息失败')
+    if (!response.data.success) {
+      throw new Error(response.data.message || '获取AI回复失败')
+    }
+
+    chatMessages.value.push({
+      content: response.data.data,
+      type: 'ai',
+      time: new Date().toLocaleTimeString()
+    })
+    scrollToBottom()
+
+    // 清理预览URL
+    if (previewUrl.value) {
+      URL.revokeObjectURL(previewUrl.value)
+      previewUrl.value = ''
+      previewType.value = ''
     }
   } catch (error) {
     console.error('发送消息失败:', error)
@@ -735,61 +807,6 @@ const formRules = {
 const handleDialogClose = () => {
   formRef.value?.resetFields()
   selectedTraining.value = null
-}
-
-// 处理文件上传
-const handleUpload = async (file) => {
-  try {
-    // 检查文件类型和大小
-    const isImage = file.type.startsWith('image/')
-    const isVideo = file.type.startsWith('video/')
-    const maxSize = 10 * 1024 * 1024 // 10MB
-
-    if (!isImage && !isVideo) {
-      ElMessage.error('只支持图片或视频文件')
-      return false
-    }
-
-    if (file.size > maxSize) {
-      ElMessage.error('文件大小不能超过10MB')
-      return false
-    }
-
-    // 创建 FormData
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('user_id', userStore.userInfo.id)
-
-    // 显示上传中的消息
-    const tempMessage = {
-      content: `正在上传${isImage ? '图片' : '视频'}...`,
-      type: 'user',
-      time: new Date().toLocaleTimeString()
-    }
-    chatMessages.value.push(tempMessage)
-
-    // 调用上传 API（需要自行实现）
-    const response = await axios.post('/api/upload', formData)
-
-    if (response.data.success) {
-      // 更新消息内容，显示上传的媒体文件
-      chatMessages.value.pop() // 移除临时消息
-      chatMessages.value.push({
-        content: '',
-        type: 'user',
-        time: new Date().toLocaleTimeString(),
-        mediaType: isImage ? 'image' : 'video',
-        mediaUrl: response.data.url
-      })
-      scrollToBottom()
-    } else {
-      throw new Error(response.data.message || '上传失败')
-    }
-  } catch (error) {
-    console.error('上传失败:', error)
-    ElMessage.error('上传失败，请重试')
-  }
-  return false // 阻止默认上传行为
 }
 
 // 添加趋势分析日期验证函数

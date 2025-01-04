@@ -76,7 +76,15 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { clubAPI } from '@/api/club'
+import { 
+  getClubActivityListService,
+  publishActivityService,
+  deleteActivityService,
+  getActivityDetailsService,
+  updateActivityService,
+  getHostListService,
+  signupActivityService
+} from '@/api/club'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
@@ -108,7 +116,7 @@ const currentUserId = computed(() => userStore.userInfo.id)
 const loadActivities = async () => {
   loading.value = true
   try {
-    const res = await clubAPI.getClubActivityList({
+    const res = await getClubActivityListService({
       clubId,
       page: page.value,
       size: size.value
@@ -124,10 +132,10 @@ const loadActivities = async () => {
 // 检查是否是主持人
 const checkIsHost = async () => {
   try {
-    const res = await clubAPI.getHostList({ clubId })
+    const res = await getHostListService({ clubId })
     isHost.value = res.data.some(host => host.userId === currentUserId.value)
   } catch (error) {
-    console.error('检查主持人权限失败', error)
+    console.error(error)
   }
 }
 
@@ -148,10 +156,10 @@ const handleSubmit = async () => {
 
   try {
     if (isEdit.value) {
-      await clubAPI.updateActivity(data)
+      await updateActivityService(data)
       ElMessage.success('更新成功')
     } else {
-      await clubAPI.publishActivity(data)
+      await publishActivityService(data)
       ElMessage.success('发布成功')
     }
     dialogVisible.value = false
@@ -165,7 +173,7 @@ const handleSubmit = async () => {
 const handleDelete = async (activityId) => {
   try {
     await ElMessageBox.confirm('确定要删除该活动吗？')
-    await clubAPI.deleteActivity({ activityId, clubId })
+    await deleteActivityService({ activityId, clubId })
     ElMessage.success('删除成功')
     loadActivities()
   } catch (error) {
@@ -178,7 +186,7 @@ const handleDelete = async (activityId) => {
 // 处理活动报名
 const handleSignup = async (activityId) => {
   try {
-    await clubAPI.signupActivity({ activityId })
+    await signupActivityService({ activityId })
     ElMessage.success('报名成功')
   } catch (error) {
     ElMessage.error('报名失败')
