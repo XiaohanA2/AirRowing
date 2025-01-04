@@ -197,8 +197,8 @@
                 @click="goToUserDetail(request.userId)"
               />
               <div class="request-info">
-                <div class="request-user">{{ request.nickname }}</div>
-                <div class="request-time">{{ request.createTime }}</div>
+                <div class="request-user">{{ request.nickName }}</div>
+                <div class="request-time">申请时间：{{ formatDate(request.createTime) }}</div>
               </div>
               <div class="request-actions" v-if="request.status === 0">
                 <el-button 
@@ -214,7 +214,7 @@
                   拒绝
                 </el-button>
               </div>
-              <div v-else class="status-text">
+              <div v-else class="status-text" :class="getStatusType(request.status)">
                 {{ getStatusText(request.status) }}
               </div>
             </div>
@@ -581,22 +581,42 @@ const loadCreatorInfo = async (creatorId) => {
 
 // 加载加入申请列表
 const loadJoinRequests = async () => {
-  console.log('Starting to load join requests');
+  console.log('Starting to load join requests')
   requestsLoading.value = true
   try {
     const params = {
       clubId: route.params.id,
       page: requestPage.value,
       size: requestSize.value
-    };
-    console.log('Loading join requests with params:', params);
+    }
+    console.log('Loading join requests with params:', params)
     const res = await getClubJoinRequestsService(params)
-    console.log('Join requests response:', res);
+    console.log('Join requests response:', res)
     if (res.success) {
-      joinRequests.value = res.data || []
-      console.log('Loaded join requests:', joinRequests.value);
-      // 由于后端返回的是数组，我们直接使用数组长度作为当前页的数据量
-      requestTotal.value = joinRequests.value.length
+      // 获取每个申请的用户信息
+      const requests = res.data || []
+      const requestsWithUserInfo = await Promise.all(
+        requests.map(async (request) => {
+          try {
+            const userRes = await getUserInfoByIdService({ id: request.userId })
+            if (userRes.success) {
+              return {
+                ...request,
+                nickName: userRes.data.nickName,
+                avatar: userRes.data.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' // 默认头像
+              }
+            }
+            return request
+          } catch (error) {
+            console.error('获取用户信息失败:', error)
+            return request
+          }
+        })
+      )
+      joinRequests.value = requestsWithUserInfo
+      console.log('Loaded join requests:', joinRequests.value)
+      // 如果返回的数据长度等于页大小，说明可能还有下一页
+      requestTotal.value = requestPage.value * requestSize.value + (requests.length === requestSize.value ? requestSize.value : 0)
     } else {
       console.warn('获取申请列表失败:', res.message)
     }
@@ -610,7 +630,7 @@ const loadJoinRequests = async () => {
       isCreator: isCreator.value,
       loading: loading.value,
       requestsLoading: requestsLoading.value
-    });
+    })
   }
 }
 

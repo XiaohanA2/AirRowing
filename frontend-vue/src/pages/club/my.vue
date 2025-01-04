@@ -5,7 +5,7 @@
         <el-table :data="managedClubs" v-loading="loading">
           <el-table-column prop="name" label="俱乐部名称" />
           <el-table-column prop="description" label="描述" />
-          <el-table-column prop="createTime" label="创建时间" />
+
           <el-table-column label="操作">
             <template #default="{ row }">
               <el-button link @click="goToDetail(row.clubId)">管理</el-button>
