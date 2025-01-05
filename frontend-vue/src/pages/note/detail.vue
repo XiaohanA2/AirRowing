@@ -131,10 +131,45 @@
                                          :key="reply.id"
                                          class="reply-item">
                                         <div class="reply-content">
-                                            <span class="reply-user">{{ reply.userName }}</span>
-                                            <span class="reply-text">{{ reply.content }}</span>
+                                            <span class="reply-user" @click="goToUserDetail(reply.userId)">{{ reply.userName }}</span>
+                                            <template v-if="reply.replyToUserId">
+                                                <span class="reply-arrow">回复</span>
+                                                <span class="reply-to-user" @click="goToUserDetail(reply.replyToUserId)">@{{ reply.replyToUserName }}</span>
+                                            </template>
+                                            <span class="reply-text">：{{ reply.content }}</span>
                                         </div>
-                                        <span class="reply-time">{{ reply.createTime }}</span>
+                                        <div class="reply-footer">
+                                            <span class="reply-time">{{ reply.createTime }}</span>
+                                            <div class="reply-actions">
+                                                <el-button type="text" size="small" @click="toggleNestedReply(comment.commentId, reply)">
+                                                    回复
+                                                </el-button>
+                                                <el-button 
+                                                    v-if="isCurrentUser(reply.userId)"
+                                                    type="text" 
+                                                    size="small" 
+                                                    @click="deleteReply(comment.commentId, reply.id)">
+                                                    删除
+                                                </el-button>
+                                            </div>
+                                        </div>
+                                        <!-- 嵌套回复的输入框 -->
+                                        <div v-if="replyInputs[`${comment.commentId}-${reply.id}`]" class="nested-reply-form">
+                                            <el-input 
+                                                v-model="replyContent[`${comment.commentId}-${reply.id}`]"
+                                                type="textarea"
+                                                :rows="2"
+                                                :placeholder="`回复 @${reply.userName}`"
+                                            ></el-input>
+                                            <div class="reply-actions">
+                                                <el-button size="small" @click="submitNestedReply(comment.commentId, reply)">
+                                                    发送
+                                                </el-button>
+                                                <el-button size="small" type="text" @click="cancelNestedReply(comment.commentId, reply)">
+                                                    取消
+                                                </el-button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -145,10 +180,13 @@
                                         type="textarea"
                                         :rows="2"
                                         :placeholder="`回复 @${comment.userName}`"
-                                    />
+                                    ></el-input>
                                     <div class="reply-actions">
-                                        <el-button size="small" @click="submitReply(comment)">
+                                        <el-button size="small" @click="submitCommentReply(comment)">
                                             发送
+                                        </el-button>
+                                        <el-button size="small" type="text" @click="cancelCommentReply(comment.commentId)">
+                                            取消
                                         </el-button>
                                     </div>
                                 </div>
@@ -369,14 +407,16 @@ export default {
                     );
                     if (commentIndex !== -1) {
                         const replies = await Promise.all((response.data || []).map(async reply => {
-                            if (reply.replyToUserId) {
+                            let replyToUserName = this.comments[commentIndex].userName;
+                            let replyToUserId = this.comments[commentIndex].userId;
+
+                            // 如果回复的是其他回复，获取被回复用户的信息
+                            if (reply.replyToUserId && reply.replyToUserId !== this.comments[commentIndex].userId) {
                                 try {
                                     const userResponse = await getUserInfoByIdService({ id: reply.replyToUserId });
                                     if (userResponse.success) {
-                                        return {
-                                            ...reply,
-                                            replyToUserName: userResponse.data.nickName
-                                        };
+                                        replyToUserName = userResponse.data.nickName;
+                                        replyToUserId = reply.replyToUserId;
                                     }
                                 } catch (error) {
                                     console.error('获取被回复用户信息失败:', error);
@@ -385,8 +425,8 @@ export default {
                             
                             return {
                                 ...reply,
-                                replyToUserName: this.comments[commentIndex].userName,
-                                replyToUserId: this.comments[commentIndex].userId
+                                replyToUserName,
+                                replyToUserId
                             };
                         }));
 
@@ -394,6 +434,8 @@ export default {
                             ...this.comments[commentIndex],
                             replies: replies
                         };
+                        
+                        console.log('处理后的回复数据:', replies);
                     }
                 }
             } catch (error) {
@@ -513,8 +555,15 @@ export default {
 
         // 提交一级评论的回复
         async submitCommentReply(comment) {
-            const content = this.replyContent[comment.commentId]?.trim();
-            if (!content) {
+            if (!comment || !comment.commentId) {
+                console.warn("Invalid comment object:", comment);
+                return;
+            }
+
+            const replyContent = this.replyContent[comment.commentId];
+            console.log('Reply content:', replyContent, 'for comment:', comment.commentId);
+
+            if (!replyContent || !replyContent.trim()) {
                 ElMessage.warning("回复内容不能为空");
                 return;
             }
@@ -523,7 +572,7 @@ export default {
             try {
                 const response = await addCommentService({
                     noteId: this.$route.params.id,
-                    content: content,
+                    content: replyContent.trim(),
                     parentId: comment.commentId,
                     replyToUserId: comment.userId
                 });
@@ -633,7 +682,9 @@ export default {
         },
         // 提交嵌套回复
         async submitNestedReply(commentId, replyTo) {
-            const content = this.replyContent[`${commentId}-${replyTo.id}`]?.trim();
+            const key = `${commentId}-${replyTo.id}`;
+            const content = this.replyContent[key]?.trim();
+            
             if (!content) {
                 ElMessage.warning("回复内容不能为空");
                 return;
@@ -645,14 +696,15 @@ export default {
                     noteId: this.$route.params.id,
                     content: content,
                     parentId: commentId,
-                    replyToUserId: replyTo.userId
+                    replyToUserId: replyTo.userId,
+                    replyToUserName: replyTo.userName // 添加被回复用户名
                 });
 
                 if (response.success) {
                     ElMessage.success("回复发布成功");
                     // 清空输入框和状态
-                    this.replyContent[`${commentId}-${replyTo.id}`] = "";
-                    this.replyInputs[`${commentId}-${replyTo.id}`] = false;
+                    this.replyContent[key] = "";
+                    this.replyInputs[key] = false;
                     this.activeReply = null;
                     
                     // 重新获取评论数据
@@ -977,45 +1029,83 @@ export default {
 }
 
 .reply-item {
-    padding: 8px 0;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.reply-item:last-child {
+    border-bottom: none;
 }
 
 .reply-content {
     display: flex;
     gap: 8px;
     align-items: baseline;
+    margin-bottom: 8px;
 }
 
 .reply-user {
     font-weight: 600;
     color: #1a1a1a;
+    cursor: pointer;
+}
+
+.reply-user:hover {
+    color: #409EFF;
+}
+
+.reply-arrow {
+    color: #909399;
+    font-size: 0.9em;
+}
+
+.reply-to-user {
+    color: #409EFF;
+    font-size: 0.9em;
 }
 
 .reply-text {
     color: #333;
 }
 
+.reply-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
 .reply-time {
     font-size: 0.8rem;
-    color: #666;
+    color: #909399;
+}
+
+.reply-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.nested-reply-form {
+    margin-top: 12px;
+    padding: 12px;
+    background: #fff;
+    border-radius: 4px;
+}
+
+.nested-reply-form .reply-actions {
+    margin-top: 8px;
+    justify-content: flex-end;
 }
 
 /* 响应式调整 */
 @media (max-width: 768px) {
-    .page-container {
-        padding: 16px;
-    }
-
-    .article-title {
-        font-size: 1.8rem;
-    }
-
-    .article-content {
-        font-size: 1rem;
-    }
-
     .replies-list {
         margin-left: 24px;
+        padding: 12px;
+    }
+
+    .reply-content {
+        flex-wrap: wrap;
     }
 }
 
